@@ -7,6 +7,7 @@ import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import NotFound from "@/pages/NotFound";
 import Dashboard from "@/pages/Dashboard";
 import ProductionEntry from "@/pages/ProductionEntry";
+import SimpleLogin from "@/pages/SimpleLogin";
 import { Route, Switch, Link, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -30,31 +31,7 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center">
-              <Factory className="w-12 h-12 text-primary-foreground" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">{t("app.title")}</h1>
-            <p className="text-muted-foreground mt-2">{t("app.subtitle")}</p>
-            <p className="text-sm text-muted-foreground mt-4">
-              Please sign in to continue
-            </p>
-          </div>
-          <Button
-            onClick={() => (window.location.href = getLoginUrl())}
-            className="w-full"
-            size="lg"
-          >
-            Sign in
-          </Button>
-        </div>
-      </div>
-    );
+    return <SimpleLogin />;
   }
 
   return (

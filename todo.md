@@ -9,10 +9,10 @@
 ## 🎯 PHASE 1: Authentication & Multi-Plant Architecture (CURRENT)
 
 ### Username/Password Authentication
-- [ ] Add bcrypt for password hashing
-- [ ] Create login API endpoint
-- [ ] Build login page UI
-- [ ] Session management
+- [x] Add bcrypt for password hashing
+- [x] Create login API endpoint
+- [x] Build login page UI
+- [x] Session management
 - [ ] "Remember me" functionality
 - [ ] Password reset flow
 

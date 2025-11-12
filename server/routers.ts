@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { dashboardRouter } from "./routers/dashboardRouter";
 import { productionRouter } from "./routers/productionRouter";
 import { communicationRouter } from "./routers/communicationRouter";
+import { authRouter } from "./routers/authRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -18,6 +19,7 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+    ...authRouter._def.procedures,
   }),
 
   // YTF Feature Routers
