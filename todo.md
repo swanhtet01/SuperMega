@@ -220,3 +220,44 @@
 - [ ] Cross-plant aggregation functions
 
 
+
+
+
+---
+
+## 🚀 PHASE 7: AWS EC2 DEPLOYMENT & CREDIT OPTIMIZATION (NEW - Nov 13, 2025)
+
+### Deploy to EC2 (Save Manus Credits)
+- [ ] Fix remaining TypeScript errors (10 errors)
+- [ ] Build production bundle
+- [ ] Copy deployment script to EC2
+- [ ] Deploy YTF system to AWS instance (34.235.156.153)
+- [ ] Configure PM2 for auto-restart
+- [ ] Set up nginx reverse proxy
+- [ ] Configure ytf.supermega.dev subdomain
+- [ ] Test YTF system on EC2
+
+### SuperMega.dev Showcase Website
+- [ ] Design showcase landing page
+- [ ] Create "Solutions" portfolio section
+- [ ] Add YTF as first case study/demo
+- [ ] Implement responsive design
+- [ ] Deploy showcase site to supermega.dev
+- [ ] Add contact/inquiry form
+
+### Autonomous AI Infrastructure
+- [ ] Install AI agent framework on EC2
+- [ ] Configure 24/7 monitoring system
+- [ ] Set up automated deployment pipeline
+- [ ] Create strategy → execution workflow
+- [ ] Build self-healing deployment system
+- [ ] Test autonomous operations
+
+### Domain Structure
+- [ ] supermega.dev - Main showcase/portfolio site
+- [ ] ytf.supermega.dev - Yangon Tyre Factory system
+- [ ] Future: [solution].supermega.dev for other projects
+- [ ] SSL certificates for all domains
+- [ ] Test domain routing
+
+

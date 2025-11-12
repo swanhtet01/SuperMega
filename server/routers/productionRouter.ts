@@ -32,7 +32,10 @@ export const productionRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const id = await createProductionRecord(input);
+      const id = await createProductionRecord({
+        ...input,
+        productionDate: new Date(input.productionDate),
+      });
       return { success: true, id };
     }),
 

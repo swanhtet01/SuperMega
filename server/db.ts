@@ -167,10 +167,10 @@ export async function getProductionRecords(filters?: {
 
   const conditions = [];
   if (filters?.startDate) {
-    conditions.push(gte(productionRecords.productionDate, filters.startDate));
+    conditions.push(gte(productionRecords.productionDate, new Date(filters.startDate)));
   }
   if (filters?.endDate) {
-    conditions.push(lte(productionRecords.productionDate, filters.endDate));
+    conditions.push(lte(productionRecords.productionDate, new Date(filters.endDate)));
   }
   if (filters?.tireSize) {
     conditions.push(eq(productionRecords.tireSize, filters.tireSize));
@@ -195,10 +195,10 @@ export async function getProductionSummary(filters?: {
 
   const conditions = [];
   if (filters?.startDate) {
-    conditions.push(gte(productionRecords.productionDate, filters.startDate));
+    conditions.push(gte(productionRecords.productionDate, new Date(filters.startDate)));
   }
   if (filters?.endDate) {
-    conditions.push(lte(productionRecords.productionDate, filters.endDate));
+    conditions.push(lte(productionRecords.productionDate, new Date(filters.endDate)));
   }
 
   let query = db
@@ -260,10 +260,10 @@ export async function getSalesSummary(filters?: {
 
   const conditions = [];
   if (filters?.startDate) {
-    conditions.push(gte(salesOrders.orderDate, filters.startDate));
+    conditions.push(gte(salesOrders.orderDate, new Date(filters.startDate)));
   }
   if (filters?.endDate) {
-    conditions.push(lte(salesOrders.orderDate, filters.endDate));
+    conditions.push(lte(salesOrders.orderDate, new Date(filters.endDate)));
   }
 
   let query = db
@@ -336,10 +336,10 @@ export async function getFinancialSummary(filters?: {
 
   const conditions = [];
   if (filters?.startDate) {
-    conditions.push(gte(financialTransactions.transactionDate, filters.startDate));
+    conditions.push(gte(financialTransactions.transactionDate, new Date(filters.startDate)));
   }
   if (filters?.endDate) {
-    conditions.push(lte(financialTransactions.transactionDate, filters.endDate));
+    conditions.push(lte(financialTransactions.transactionDate, new Date(filters.endDate)));
   }
 
   let query = db
@@ -387,10 +387,10 @@ export async function getQualityMetrics(filters?: {
 
   const conditions = [];
   if (filters?.startDate) {
-    conditions.push(gte(productionRecords.productionDate, filters.startDate));
+    conditions.push(gte(productionRecords.productionDate, new Date(filters.startDate)));
   }
   if (filters?.endDate) {
-    conditions.push(lte(productionRecords.productionDate, filters.endDate));
+    conditions.push(lte(productionRecords.productionDate, new Date(filters.endDate)));
   }
 
   let query = db
