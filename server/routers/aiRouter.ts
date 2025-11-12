@@ -210,7 +210,7 @@ async function buildDataContext(): Promise<string> {
     const [dealers, orders] = sales;
 
     // Calculate key metrics
-    const totalProduction = production?.totalQuantity || 0;
+    const totalProduction = production?.totalProduction || 0;
     const defectRate = quality.length > 0 
       ? (quality.filter(q => q.result === "fail").length / quality.length * 100).toFixed(2)
       : "0.00";

@@ -451,26 +451,23 @@ export async function getSalesOrders(filters: {
 
 export async function createSalesOrder(data: {
   dealerId: string;
-  orderDate: string;
-  deliveryDate?: string;
+  orderDate: Date;
+  deliveryDate?: Date;
+  notes?: string;
   items: Array<{
     tireSize: string;
-    tireType: string;
     quantity: number;
     unitPrice: number;
   }>;
-  notes?: string;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const orderNumber = `SO-${Date.now()}`;
   
   const totalAmount = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   
-  await db.insert(salesOrders).values({
-    id: orderId,
+  const [order] = await db.insert(salesOrders).values({
     orderNumber,
     dealerId: data.dealerId,
     orderDate: data.orderDate,
@@ -481,6 +478,8 @@ export async function createSalesOrder(data: {
     paymentStatus: "unpaid",
     notes: data.notes,
   });
+  
+  const orderId = order.insertId.toString();
   
   // Insert order items
   for (const item of data.items) {
