@@ -89,7 +89,16 @@ export const salesRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const order = await createSalesOrder(input);
+      const order = await createSalesOrder({
+        ...input,
+        orderDate: new Date(input.orderDate),
+        deliveryDate: input.deliveryDate ? new Date(input.deliveryDate) : undefined,
+        items: input.items.map(item => ({
+          tireSize: item.tireSize,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      });
       return order;
     }),
 
