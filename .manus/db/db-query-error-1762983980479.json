@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO users (id, name, email, loginMethod, role, department) VALUES \n('test-supervisor', 'Supervisor (Test)', 'supervisor@ytf.test', 'test', 'user', 'Production'),\n('test-manager', 'Manager (Test)', 'manager@ytf.test', 'test', 'user', 'Operations'),\n('test-executive', 'Executive (Test)', 'executive@ytf.test', 'test', 'admin', 'Management'),\n('test-admin', 'Admin (Test)', 'admin@ytf.test', 'test', 'admin', 'IT')\nON DUPLICATE KEY UPDATE name=VALUES(name);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3bQFTkpbjMoBGxQ.d490348e4005 --database 45JoWfWyuUjKHFq2neKvby --execute INSERT INTO users (id, name, email, loginMethod, role, department) VALUES \n('test-supervisor', 'Supervisor (Test)', 'supervisor@ytf.test', 'test', 'user', 'Production'),\n('test-manager', 'Manager (Test)', 'manager@ytf.test', 'test', 'user', 'Operations'),\n('test-executive', 'Executive (Test)', 'executive@ytf.test', 'test', 'admin', 'Management'),\n('test-admin', 'Admin (Test)', 'admin@ytf.test', 'test', 'admin', 'IT')\nON DUPLICATE KEY UPDATE name=VALUES(name);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'department' in 'field list'"
+  ]
+}
