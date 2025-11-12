@@ -11,6 +11,7 @@ import ProductionEntry from "./pages/ProductionEntry";
 import InventoryManagement from "./pages/InventoryManagement";
 import SalesManagement from "./pages/SalesManagement";
 import FinancialManagement from "./pages/FinancialManagement";
+import AIAssistant from "./pages/AIAssistant";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
         <Route path={"/inventory"} component={InventoryManagement} />
         <Route path={"/sales"} component={SalesManagement} />
         <Route path={"/financial"} component={FinancialManagement} />
+        <Route path={"/ai-assistant"} component={AIAssistant} />
         <Route path={"/alerts"} component={() => <div className="text-2xl font-bold">Alerts Module - Coming Soon</div>} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />

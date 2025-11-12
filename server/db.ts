@@ -605,3 +605,27 @@ export async function getProfitAndLoss(startDate: string, endDate: string) {
 
 
 
+
+
+
+// Raw Materials Management
+export async function createRawMaterial(data: Omit<InsertRawMaterial, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const id = `rm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  await db.insert(rawMaterials).values({ id, ...data });
+  return id;
+}
+
+// Finished Goods Management
+export async function createFinishedGood(data: Omit<InsertFinishedGood, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const id = `fg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  await db.insert(finishedGoods).values({ id, ...data });
+  return id;
+}
+
+

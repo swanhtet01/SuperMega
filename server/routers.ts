@@ -9,6 +9,8 @@ import { qualityRouter } from "./routers/qualityRouter";
 import { inventoryRouter } from "./routers/inventoryRouter";
 import { salesRouter } from "./routers/salesRouter";
 import { financialRouter } from "./routers/financialRouter";
+import { aiRouter } from "./routers/aiRouter";
+import { excelRouter } from "./routers/excelRouter";
 
 export const appRouter = router({
   system: systemRouter,
@@ -30,6 +32,8 @@ export const appRouter = router({
   inventory: inventoryRouter,
   sales: salesRouter,
   financial: financialRouter,
+  ai: aiRouter,
+  excel: excelRouter,
 });
 
 export type AppRouter = typeof appRouter;
