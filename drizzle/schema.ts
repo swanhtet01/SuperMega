@@ -1,16 +1,26 @@
-import { mysqlEnum, mysqlTable, text, timestamp, varchar, int, boolean, date, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, mysqlEnum, varchar, text, int, date, timestamp, index, boolean, decimal, json } from "drizzle-orm/mysql-core";
 
 /**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
+ * YANGON TYRE FACTORY - REMOTE MANAGEMENT SYSTEM
+ * Complete schema for remote factory monitoring and management
+ */
+
+// ============================================
+// USER & ROLE MANAGEMENT
+// ============================================
+
+/**
+ * Users - 4 Role System
+ * Supervisor (lowest) → Manager → Executive → Admin
  */
 export const users = mysqlTable("users", {
   id: varchar("id", { length: 64 }).primaryKey(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["inspector", "supervisor", "manager", "executive", "admin"]).default("inspector").notNull(),
+  role: mysqlEnum("role", ["supervisor", "manager", "executive", "admin"]).default("supervisor").notNull(),
+  department: mysqlEnum("department", ["production", "sales", "inventory", "finance", "all"]),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow(),
 });
@@ -18,93 +28,91 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+// ============================================
+// PRODUCTION MODULE
+// ============================================
+
 /**
- * Production Records - Daily tire production tracking
+ * Production Records - YTF A/B/R Quality System
  */
 export const productionRecords = mysqlTable("production_records", {
   id: varchar("id", { length: 64 }).primaryKey(),
+  
+  // Date & Batch
   productionDate: date("productionDate").notNull(),
+  batchNumber: varchar("batchNumber", { length: 100 }).notNull(),
+  section: varchar("section", { length: 50 }).default("Section-07"),
+  shiftType: mysqlEnum("shiftType", ["1-shift", "3-shift"]).notNull(),
+  
+  // Tire Info
   tireSize: varchar("tireSize", { length: 50 }).notNull(),
-  tireType: varchar("tireType", { length: 50 }).notNull(),
-  quantityProduced: int("quantityProduced").notNull(),
-  quantityApproved: int("quantityApproved").notNull(),
-  quantityRejected: int("quantityRejected").notNull(),
-  shift: varchar("shift", { length: 20 }),
-  batchNumber: varchar("batchNumber", { length: 100 }),
+  batchCode: varchar("batchCode", { length: 20 }).notNull(),
+  tireType: varchar("tireType", { length: 50 }), // R, L, AG, Grip, etc.
+  
+  // Targets
+  target1Shift: int("target1Shift"),
+  target3Shift: int("target3Shift"),
+  
+  // YTF Quality System: A (Approved), B (Defect), R (Rejected)
+  curingA: int("curingA").default(0).notNull(),
+  curingB: int("curingB").default(0).notNull(),
+  curingR: int("curingR").default(0).notNull(),
+  totalProduced: int("totalProduced").notNull(),
+  
+  // Weight Tracking
+  specWeight: decimal("specWeight", { precision: 6, scale: 2 }).notNull(),
+  weight1: decimal("weight1", { precision: 6, scale: 2 }),
+  weight2: decimal("weight2", { precision: 6, scale: 2 }),
+  weight3: decimal("weight3", { precision: 6, scale: 2 }),
+  averageWeight: decimal("averageWeight", { precision: 6, scale: 2 }),
+  totalWeight: decimal("totalWeight", { precision: 8, scale: 2 }),
+  
+  // Metadata
+  supervisorName: varchar("supervisorName", { length: 100 }),
+  enteredBy: varchar("enteredBy", { length: 64 }), // User ID
   notes: text("notes"),
+  sourceFile: varchar("sourceFile", { length: 500 }), // If imported from Excel
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
 }, (table) => ({
-  dateIdx: index("production_date_idx").on(table.productionDate),
-  sizeIdx: index("tire_size_idx").on(table.tireSize),
+  dateIdx: index("prod_date_idx").on(table.productionDate),
+  batchIdx: index("prod_batch_idx").on(table.batchNumber),
+  sizeIdx: index("prod_size_idx").on(table.tireSize),
 }));
 
 export type ProductionRecord = typeof productionRecords.$inferSelect;
 export type InsertProductionRecord = typeof productionRecords.$inferInsert;
 
 /**
- * Quality Control Records
+ * Flap Production Records
  */
-export const qualityControlRecords = mysqlTable("quality_control_records", {
+export const flapRecords = mysqlTable("flap_records", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  productionRecordId: varchar("productionRecordId", { length: 64 }),
-  inspectionDate: date("inspectionDate").notNull(),
-  inspectorName: varchar("inspectorName", { length: 100 }),
-  defectType: varchar("defectType", { length: 100 }),
-  defectCount: int("defectCount").notNull(),
-  passed: boolean("passed").notNull(),
+  productionDate: date("productionDate").notNull(),
+  batchNumber: varchar("batchNumber", { length: 100 }).notNull(),
+  flapSize: varchar("flapSize", { length: 100 }).notNull(),
+  shiftType: mysqlEnum("shiftType", ["1-shift", "3-shift"]).notNull(),
+  target: int("target"),
+  quantityProduced: int("quantityProduced").notNull(),
+  quantityDefective: int("quantityDefective").default(0),
+  unitWeight: decimal("unitWeight", { precision: 6, scale: 2 }),
+  totalWeight: decimal("totalWeight", { precision: 8, scale: 2 }),
   notes: text("notes"),
+  enteredBy: varchar("enteredBy", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow(),
 }, (table) => ({
-  dateIdx: index("inspection_date_idx").on(table.inspectionDate),
+  dateIdx: index("flap_date_idx").on(table.productionDate),
 }));
 
-export type QualityControlRecord = typeof qualityControlRecords.$inferSelect;
-export type InsertQualityControlRecord = typeof qualityControlRecords.$inferInsert;
+export type FlapRecord = typeof flapRecords.$inferSelect;
+export type InsertFlapRecord = typeof flapRecords.$inferInsert;
+
+// ============================================
+// SALES MODULE
+// ============================================
 
 /**
- * Raw Materials Inventory
- */
-export const rawMaterials = mysqlTable("raw_materials", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  materialName: varchar("materialName", { length: 200 }).notNull(),
-  materialCategory: varchar("materialCategory", { length: 100 }).notNull(),
-  unit: varchar("unit", { length: 20 }).notNull(),
-  currentStock: int("currentStock").notNull(),
-  minimumStock: int("minimumStock").notNull(),
-  unitCost: int("unitCost").notNull(),
-  supplier: varchar("supplier", { length: 200 }),
-  lastRestockDate: date("lastRestockDate"),
-  createdAt: timestamp("createdAt").defaultNow(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
-}, (table) => ({
-  categoryIdx: index("material_category_idx").on(table.materialCategory),
-}));
-
-export type RawMaterial = typeof rawMaterials.$inferSelect;
-export type InsertRawMaterial = typeof rawMaterials.$inferInsert;
-
-/**
- * Finished Goods Inventory
- */
-export const finishedGoods = mysqlTable("finished_goods", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  tireSize: varchar("tireSize", { length: 50 }).notNull(),
-  tireType: varchar("tireType", { length: 50 }).notNull(),
-  currentStock: int("currentStock").notNull(),
-  minimumStock: int("minimumStock").notNull(),
-  unitPrice: int("unitPrice").notNull(),
-  createdAt: timestamp("createdAt").defaultNow(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
-}, (table) => ({
-  sizeIdx: index("finished_tire_size_idx").on(table.tireSize),
-}));
-
-export type FinishedGood = typeof finishedGoods.$inferSelect;
-export type InsertFinishedGood = typeof finishedGoods.$inferInsert;
-
-/**
- * Dealers/Retailers Database
+ * Dealers
  */
 export const dealers = mysqlTable("dealers", {
   id: varchar("id", { length: 64 }).primaryKey(),
@@ -116,16 +124,12 @@ export const dealers = mysqlTable("dealers", {
   address: text("address"),
   city: varchar("city", { length: 100 }),
   region: varchar("region", { length: 100 }),
-  dealerType: varchar("dealerType", { length: 50 }),
-  creditLimit: int("creditLimit"),
-  outstandingBalance: int("outstandingBalance"),
-  status: mysqlEnum("status", ["active", "inactive", "suspended"]).default("active").notNull(),
+  creditLimit: int("creditLimit").default(0),
+  currentBalance: int("currentBalance").default(0),
+  isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
-}, (table) => ({
-  cityIdx: index("dealer_city_idx").on(table.city),
-  statusIdx: index("dealer_status_idx").on(table.status),
-}));
+});
 
 export type Dealer = typeof dealers.$inferSelect;
 export type InsertDealer = typeof dealers.$inferInsert;
@@ -136,19 +140,21 @@ export type InsertDealer = typeof dealers.$inferInsert;
 export const salesOrders = mysqlTable("sales_orders", {
   id: varchar("id", { length: 64 }).primaryKey(),
   orderNumber: varchar("orderNumber", { length: 100 }).notNull().unique(),
-  dealerId: varchar("dealerId", { length: 64 }).notNull(),
   orderDate: date("orderDate").notNull(),
-  deliveryDate: date("deliveryDate"),
+  dealerId: varchar("dealerId", { length: 64 }).notNull(),
+  dealerName: varchar("dealerName", { length: 200 }), // Denormalized
   totalAmount: int("totalAmount").notNull(),
-  paidAmount: int("paidAmount").notNull(),
-  status: mysqlEnum("status", ["pending", "confirmed", "shipped", "delivered", "cancelled"]).default("pending").notNull(),
-  paymentStatus: mysqlEnum("paymentStatus", ["unpaid", "partial", "paid"]).default("unpaid").notNull(),
+  paidAmount: int("paidAmount").default(0).notNull(),
+  status: mysqlEnum("status", ["pending", "confirmed", "delivered", "paid", "cancelled"]).default("pending").notNull(),
+  deliveryDate: date("deliveryDate"),
+  paymentTerms: varchar("paymentTerms", { length: 100 }),
   notes: text("notes"),
+  enteredBy: varchar("enteredBy", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
 }, (table) => ({
-  dealerIdx: index("order_dealer_idx").on(table.dealerId),
   dateIdx: index("order_date_idx").on(table.orderDate),
+  dealerIdx: index("order_dealer_idx").on(table.dealerId),
   statusIdx: index("order_status_idx").on(table.status),
 }));
 
@@ -162,7 +168,7 @@ export const salesOrderItems = mysqlTable("sales_order_items", {
   id: varchar("id", { length: 64 }).primaryKey(),
   orderId: varchar("orderId", { length: 64 }).notNull(),
   tireSize: varchar("tireSize", { length: 50 }).notNull(),
-  tireType: varchar("tireType", { length: 50 }).notNull(),
+  tireType: varchar("tireType", { length: 50 }),
   quantity: int("quantity").notNull(),
   unitPrice: int("unitPrice").notNull(),
   totalPrice: int("totalPrice").notNull(),
@@ -174,288 +180,292 @@ export const salesOrderItems = mysqlTable("sales_order_items", {
 export type SalesOrderItem = typeof salesOrderItems.$inferSelect;
 export type InsertSalesOrderItem = typeof salesOrderItems.$inferInsert;
 
+// ============================================
+// INVENTORY MODULE
+// ============================================
+
+/**
+ * Raw Materials
+ */
+export const rawMaterials = mysqlTable("raw_materials", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  materialCode: varchar("materialCode", { length: 50 }).notNull().unique(),
+  materialName: varchar("materialName", { length: 200 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull(),
+  currentStock: int("currentStock").notNull(),
+  minimumStock: int("minimumStock").notNull(),
+  unitCost: int("unitCost").notNull(),
+  supplier: varchar("supplier", { length: 200 }),
+  lastRestockDate: date("lastRestockDate"),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  categoryIdx: index("material_category_idx").on(table.category),
+}));
+
+export type RawMaterial = typeof rawMaterials.$inferSelect;
+export type InsertRawMaterial = typeof rawMaterials.$inferInsert;
+
+/**
+ * Finished Goods Inventory
+ */
+export const finishedGoods = mysqlTable("finished_goods", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  tireSize: varchar("tireSize", { length: 50 }).notNull(),
+  tireType: varchar("tireType", { length: 50 }).notNull(),
+  batchCode: varchar("batchCode", { length: 20 }),
+  currentStock: int("currentStock").notNull(),
+  minimumStock: int("minimumStock").notNull(),
+  unitPrice: int("unitPrice").notNull(),
+  location: varchar("location", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  sizeIdx: index("fg_size_idx").on(table.tireSize),
+}));
+
+export type FinishedGood = typeof finishedGoods.$inferSelect;
+export type InsertFinishedGood = typeof finishedGoods.$inferInsert;
+
+// ============================================
+// FINANCIAL MODULE
+// ============================================
+
 /**
  * Financial Transactions
  */
 export const financialTransactions = mysqlTable("financial_transactions", {
   id: varchar("id", { length: 64 }).primaryKey(),
   transactionDate: date("transactionDate").notNull(),
-  transactionType: mysqlEnum("transactionType", ["revenue", "expense", "asset", "liability"]).notNull(),
+  type: mysqlEnum("type", ["revenue", "expense", "payment_received", "payment_made"]).notNull(),
   category: varchar("category", { length: 100 }).notNull(),
-  description: text("description"),
   amount: int("amount").notNull(),
+  description: text("description"),
   referenceNumber: varchar("referenceNumber", { length: 100 }),
-  dealerId: varchar("dealerId", { length: 64 }),
+  relatedEntity: varchar("relatedEntity", { length: 200 }), // Dealer name, supplier name, etc.
+  paymentMethod: varchar("paymentMethod", { length: 50 }),
+  notes: text("notes"),
+  enteredBy: varchar("enteredBy", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
 }, (table) => ({
-  dateIdx: index("transaction_date_idx").on(table.transactionDate),
-  typeIdx: index("transaction_type_idx").on(table.transactionType),
-  categoryIdx: index("transaction_category_idx").on(table.category),
+  dateIdx: index("fin_date_idx").on(table.transactionDate),
+  typeIdx: index("fin_type_idx").on(table.type),
+  categoryIdx: index("fin_category_idx").on(table.category),
 }));
 
 export type FinancialTransaction = typeof financialTransactions.$inferSelect;
 export type InsertFinancialTransaction = typeof financialTransactions.$inferInsert;
 
+// ============================================
+// COMMUNITY & COMMUNICATION
+// ============================================
+
 /**
- * Production Targets
+ * Announcements Board
  */
-export const productionTargets = mysqlTable("production_targets", {
+export const announcements = mysqlTable("announcements", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  targetMonth: varchar("targetMonth", { length: 7 }).notNull(),
-  tireSize: varchar("tireSize", { length: 50 }).notNull(),
-  targetQuantity: int("targetQuantity").notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  content: text("content").notNull(),
+  category: mysqlEnum("category", ["production", "sales", "hr", "safety", "maintenance", "general"]).notNull(),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal").notNull(),
+  isPinned: boolean("isPinned").default(false).notNull(),
+  targetRoles: text("targetRoles"), // JSON array of roles
+  targetDepartments: text("targetDepartments"), // JSON array of departments
+  scheduledFor: timestamp("scheduledFor"),
+  expiresAt: timestamp("expiresAt"),
+  attachments: text("attachments"), // JSON array of file URLs
+  postedBy: varchar("postedBy", { length: 64 }).notNull(),
+  viewCount: int("viewCount").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
 }, (table) => ({
-  monthIdx: index("target_month_idx").on(table.targetMonth),
+  categoryIdx: index("ann_category_idx").on(table.category),
+  priorityIdx: index("ann_priority_idx").on(table.priority),
+  dateIdx: index("ann_date_idx").on(table.createdAt),
 }));
 
-export type ProductionTarget = typeof productionTargets.$inferSelect;
-export type InsertProductionTarget = typeof productionTargets.$inferInsert;
+export type Announcement = typeof announcements.$inferSelect;
+export type InsertAnnouncement = typeof announcements.$inferInsert;
 
 /**
- * System Alerts
+ * Schedule Calendar
  */
-export const systemAlerts = mysqlTable("system_alerts", {
+export const scheduleEvents = mysqlTable("schedule_events", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  alertType: mysqlEnum("alertType", ["low_stock", "quality_issue", "production_delay", "payment_overdue"]).notNull(),
-  severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull(),
-  title: varchar("title", { length: 200 }).notNull(),
-  message: text("message").notNull(),
-  resolved: boolean("resolved").default(false).notNull(),
-  resolvedAt: timestamp("resolvedAt"),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  eventType: mysqlEnum("eventType", ["production", "maintenance", "meeting", "holiday", "training", "other"]).notNull(),
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate"),
+  isAllDay: boolean("isAllDay").default(false).notNull(),
+  location: varchar("location", { length: 200 }),
+  participants: text("participants"), // JSON array of user IDs
+  reminderBefore: int("reminderBefore"), // Minutes before event
+  createdBy: varchar("createdBy", { length: 64 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
 }, (table) => ({
-  typeIdx: index("alert_type_idx").on(table.alertType),
-  resolvedIdx: index("alert_resolved_idx").on(table.resolved),
+  typeIdx: index("event_type_idx").on(table.eventType),
+  dateIdx: index("event_date_idx").on(table.startDate),
 }));
 
-export type SystemAlert = typeof systemAlerts.$inferSelect;
-export type InsertSystemAlert = typeof systemAlerts.$inferInsert;
+export type ScheduleEvent = typeof scheduleEvents.$inferSelect;
+export type InsertScheduleEvent = typeof scheduleEvents.$inferInsert;
 
 // ============================================
-// DQMS (Digital Quality Management System) Tables
+// AI INSIGHTS & ALERTS
 // ============================================
 
 /**
- * Quality Inspections - Multi-stage inspection records
- * Stages: mixing, building, curing, final
+ * System Insights - AI-generated insights
  */
-export const qualityInspections = mysqlTable("quality_inspections", {
+export const systemInsights = mysqlTable("system_insights", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  batchId: varchar("batchId", { length: 64 }).notNull(),
-  stage: mysqlEnum("stage", ["mixing", "building", "curing", "final"]).notNull(),
-  inspectorId: varchar("inspectorId", { length: 64 }).notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-  result: mysqlEnum("result", ["pass", "fail", "rework"]).notNull(),
-  notes: text("notes"),
-  supervisorId: varchar("supervisorId", { length: 64 }),
-  approvedAt: timestamp("approvedAt"),
-  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
-}, (table) => ({
-  batchIdx: index("inspection_batch_idx").on(table.batchId),
-  stageIdx: index("inspection_stage_idx").on(table.stage),
-  statusIdx: index("inspection_status_idx").on(table.status),
-}));
-
-export type QualityInspection = typeof qualityInspections.$inferSelect;
-export type InsertQualityInspection = typeof qualityInspections.$inferInsert;
-
-/**
- * Defects - Individual defect records linked to inspections
- */
-export const defects = mysqlTable("defects", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  inspectionId: varchar("inspectionId", { length: 64 }).notNull(),
-  type: mysqlEnum("type", ["visual", "dimensional", "structural", "material"]).notNull(),
-  category: varchar("category", { length: 100 }).notNull(),
-  severity: mysqlEnum("severity", ["minor", "major", "critical"]).notNull(),
+  insightType: mysqlEnum("insightType", [
+    "quality_alert", "weight_variance", "production_efficiency", 
+    "inventory_alert", "sales_trend", "financial_anomaly", "general"
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
   description: text("description").notNull(),
-  photoUrl: text("photoUrl"),
-  rootCause: text("rootCause"),
-  correctiveAction: text("correctiveAction"),
-  createdAt: timestamp("createdAt").defaultNow(),
-}, (table) => ({
-  inspectionIdx: index("defect_inspection_idx").on(table.inspectionId),
-  typeIdx: index("defect_type_idx").on(table.type),
-}));
-
-export type Defect = typeof defects.$inferSelect;
-export type InsertDefect = typeof defects.$inferInsert;
-
-/**
- * Production Batches - Batch tracking with traceability
- */
-export const productionBatches = mysqlTable("production_batches", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  batchNumber: varchar("batchNumber", { length: 100 }).notNull().unique(),
-  productType: varchar("productType", { length: 100 }).notNull(),
-  tireSize: varchar("tireSize", { length: 50 }).notNull(),
-  quantity: int("quantity").notNull(),
-  startTime: timestamp("startTime").notNull(),
-  endTime: timestamp("endTime"),
-  productionLine: varchar("productionLine", { length: 50 }).notNull(),
-  shift: mysqlEnum("shift", ["day", "night"]).notNull(),
-  status: mysqlEnum("status", ["in_progress", "completed", "failed", "rework"]).default("in_progress").notNull(),
-  createdAt: timestamp("createdAt").defaultNow(),
-}, (table) => ({
-  batchNumberIdx: index("batch_number_idx").on(table.batchNumber),
-  statusIdx: index("batch_status_idx").on(table.status),
-}));
-
-export type ProductionBatch = typeof productionBatches.$inferSelect;
-export type InsertProductionBatch = typeof productionBatches.$inferInsert;
-
-/**
- * Batch Traceability - Links batches to materials, equipment, operators
- */
-export const batchTraceability = mysqlTable("batch_traceability", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  batchId: varchar("batchId", { length: 64 }).notNull(),
-  materialLotIds: text("materialLotIds"),
-  equipmentId: varchar("equipmentId", { length: 64 }),
-  operatorId: varchar("operatorId", { length: 64 }),
-  mixingTemp: int("mixingTemp"),
-  mixingTime: int("mixingTime"),
-  curingTemp: int("curingTemp"),
-  curingPressure: int("curingPressure"),
-  curingTime: int("curingTime"),
-  createdAt: timestamp("createdAt").defaultNow(),
-}, (table) => ({
-  batchIdx: index("traceability_batch_idx").on(table.batchId),
-}));
-
-export type BatchTraceability = typeof batchTraceability.$inferSelect;
-export type InsertBatchTraceability = typeof batchTraceability.$inferInsert;
-
-/**
- * Material Lots - Raw material tracking
- */
-export const materialLots = mysqlTable("material_lots", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  lotNumber: varchar("lotNumber", { length: 100 }).notNull().unique(),
-  materialType: varchar("materialType", { length: 100 }).notNull(),
-  supplier: varchar("supplier", { length: 200 }).notNull(),
-  receiptDate: timestamp("receiptDate").notNull(),
-  expiryDate: timestamp("expiryDate"),
-  qualityCert: text("qualityCert"),
-  quantity: int("quantity").notNull(),
-  unit: varchar("unit", { length: 20 }).notNull(),
-  status: mysqlEnum("status", ["available", "in_use", "depleted", "quarantine"]).default("available").notNull(),
-  createdAt: timestamp("createdAt").defaultNow(),
-}, (table) => ({
-  lotNumberIdx: index("lot_number_idx").on(table.lotNumber),
-  statusIdx: index("lot_status_idx").on(table.status),
-}));
-
-export type MaterialLot = typeof materialLots.$inferSelect;
-export type InsertMaterialLot = typeof materialLots.$inferInsert;
-
-/**
- * Equipment - Production equipment tracking
- */
-export const equipment = mysqlTable("equipment", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  equipmentCode: varchar("equipmentCode", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 200 }).notNull(),
-  type: mysqlEnum("type", ["mixer", "building_machine", "curing_press", "testing_equipment"]).notNull(),
-  productionLine: varchar("productionLine", { length: 50 }),
-  lastMaintenanceDate: timestamp("lastMaintenanceDate"),
-  nextMaintenanceDate: timestamp("nextMaintenanceDate"),
-  calibrationDate: timestamp("calibrationDate"),
-  status: mysqlEnum("status", ["operational", "maintenance", "down"]).default("operational").notNull(),
-  createdAt: timestamp("createdAt").defaultNow(),
-}, (table) => ({
-  codeIdx: index("equipment_code_idx").on(table.equipmentCode),
-  statusIdx: index("equipment_status_idx").on(table.status),
-}));
-
-export type Equipment = typeof equipment.$inferSelect;
-export type InsertEquipment = typeof equipment.$inferInsert;
-
-/**
- * Operators - Production operators/workers
- */
-export const operators = mysqlTable("operators", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  employeeId: varchar("employeeId", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 200 }).notNull(),
-  shift: mysqlEnum("shift", ["day", "night", "rotating"]).notNull(),
-  trainingRecords: text("trainingRecords"),
-  certifications: text("certifications"),
-  performanceScore: int("performanceScore"),
-  status: mysqlEnum("status", ["active", "inactive", "on_leave"]).default("active").notNull(),
-  createdAt: timestamp("createdAt").defaultNow(),
-}, (table) => ({
-  employeeIdx: index("operator_employee_idx").on(table.employeeId),
-  statusIdx: index("operator_status_idx").on(table.status),
-}));
-
-export type Operator = typeof operators.$inferSelect;
-export type InsertOperator = typeof operators.$inferInsert;
-
-/**
- * Cost of Quality - Financial impact tracking
- */
-export const costOfQuality = mysqlTable("cost_of_quality", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  date: date("date").notNull(),
-  scrapCost: int("scrapCost").notNull().default(0),
-  reworkCost: int("reworkCost").notNull().default(0),
-  warrantyCost: int("warrantyCost").notNull().default(0),
-  inspectionCost: int("inspectionCost").notNull().default(0),
-  totalCOQ: int("totalCOQ").notNull().default(0),
-  defectCount: int("defectCount").notNull().default(0),
-  productionVolume: int("productionVolume").notNull().default(0),
-  notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow(),
-}, (table) => ({
-  dateIdx: index("coq_date_idx").on(table.date),
-}));
-
-export type CostOfQuality = typeof costOfQuality.$inferSelect;
-export type InsertCostOfQuality = typeof costOfQuality.$inferInsert;
-
-/**
- * Quality Alerts - Real-time quality alerts
- */
-export const qualityAlerts = mysqlTable("quality_alerts", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  alertType: varchar("alertType", { length: 100 }).notNull(),
-  severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull(),
-  message: text("message").notNull(),
-  threshold: int("threshold"),
-  currentValue: int("currentValue"),
-  triggeredAt: timestamp("triggeredAt").defaultNow().notNull(),
-  acknowledgedBy: varchar("acknowledgedBy", { length: 64 }),
-  acknowledgedAt: timestamp("acknowledgedAt"),
+  recommendation: text("recommendation"),
+  affectedModule: mysqlEnum("affectedModule", ["production", "sales", "inventory", "finance", "all"]),
+  dataSnapshot: text("dataSnapshot"), // JSON with supporting data
+  isResolved: boolean("isResolved").default(false).notNull(),
+  resolvedBy: varchar("resolvedBy", { length: 64 }),
   resolvedAt: timestamp("resolvedAt"),
-  status: mysqlEnum("status", ["active", "acknowledged", "resolved"]).default("active").notNull(),
-}, (table) => ({
-  statusIdx: index("quality_alert_status_idx").on(table.status),
-  severityIdx: index("quality_alert_severity_idx").on(table.severity),
-}));
-
-export type QualityAlert = typeof qualityAlerts.$inferSelect;
-export type InsertQualityAlert = typeof qualityAlerts.$inferInsert;
-
-/**
- * Alert Rules - Configurable alert thresholds
- */
-export const alertRules = mysqlTable("alert_rules", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  ruleName: varchar("ruleName", { length: 200 }).notNull(),
-  metric: varchar("metric", { length: 100 }).notNull(),
-  threshold: int("threshold").notNull(),
-  severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull(),
-  notificationChannels: text("notificationChannels"),
-  escalationTime: int("escalationTime"),
-  enabled: boolean("enabled").notNull().default(true),
   createdAt: timestamp("createdAt").defaultNow(),
 }, (table) => ({
-  metricIdx: index("alert_rule_metric_idx").on(table.metric),
-  enabledIdx: index("alert_rule_enabled_idx").on(table.enabled),
+  typeIdx: index("insight_type_idx").on(table.insightType),
+  severityIdx: index("insight_severity_idx").on(table.severity),
+  moduleIdx: index("insight_module_idx").on(table.affectedModule),
 }));
 
-export type AlertRule = typeof alertRules.$inferSelect;
-export type InsertAlertRule = typeof alertRules.$inferInsert;
+export type SystemInsight = typeof systemInsights.$inferSelect;
+export type InsertSystemInsight = typeof systemInsights.$inferInsert;
+
+// ============================================
+// FILE MANAGEMENT & SYNC
+// ============================================
+
+/**
+ * Uploaded Files
+ */
+export const uploadedFiles = mysqlTable("uploaded_files", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  fileName: varchar("fileName", { length: 500 }).notNull(),
+  fileType: varchar("fileType", { length: 100 }).notNull(),
+  fileSize: int("fileSize").notNull(),
+  filePath: varchar("filePath", { length: 1000 }).notNull(),
+  fileUrl: varchar("fileUrl", { length: 1000 }),
+  category: mysqlEnum("category", ["production", "sales", "inventory", "finance", "announcement", "other"]).notNull(),
+  uploadedBy: varchar("uploadedBy", { length: 64 }).notNull(),
+  processedStatus: mysqlEnum("processedStatus", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
+  recordsExtracted: int("recordsExtracted").default(0),
+  errorLog: text("errorLog"),
+  createdAt: timestamp("createdAt").defaultNow(),
+}, (table) => ({
+  categoryIdx: index("file_category_idx").on(table.category),
+  statusIdx: index("file_status_idx").on(table.processedStatus),
+}));
+
+export type UploadedFile = typeof uploadedFiles.$inferSelect;
+export type InsertUploadedFile = typeof uploadedFiles.$inferInsert;
+
+/**
+ * Data Sync Log
+ */
+export const dataSyncLog = mysqlTable("data_sync_log", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  syncType: mysqlEnum("syncType", ["google_drive", "excel_upload", "manual_entry", "api_import"]).notNull(),
+  sourceIdentifier: varchar("sourceIdentifier", { length: 500 }),
+  targetModule: mysqlEnum("targetModule", ["production", "sales", "inventory", "finance", "all"]).notNull(),
+  recordsImported: int("recordsImported").default(0).notNull(),
+  recordsFailed: int("recordsFailed").default(0).notNull(),
+  status: mysqlEnum("status", ["success", "partial", "failed"]).notNull(),
+  errorLog: text("errorLog"),
+  syncedBy: varchar("syncedBy", { length: 64 }),
+  syncedAt: timestamp("syncedAt").defaultNow(),
+}, (table) => ({
+  typeIdx: index("sync_type_idx").on(table.syncType),
+  moduleIdx: index("sync_module_idx").on(table.targetModule),
+  statusIdx: index("sync_status_idx").on(table.status),
+}));
+
+export type DataSyncLog = typeof dataSyncLog.$inferSelect;
+export type InsertDataSyncLog = typeof dataSyncLog.$inferInsert;
+
+// ============================================
+// SYSTEM SETTINGS & META INFRASTRUCTURE
+// ============================================
+
+/**
+ * System Settings - Configurable parameters
+ */
+export const systemSettings = mysqlTable("system_settings", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  settingKey: varchar("settingKey", { length: 200 }).notNull().unique(),
+  settingValue: text("settingValue").notNull(),
+  settingType: mysqlEnum("settingType", ["string", "number", "boolean", "json"]).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  description: text("description"),
+  isEditable: boolean("isEditable").default(true).notNull(),
+  updatedBy: varchar("updatedBy", { length: 64 }),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  categoryIdx: index("setting_category_idx").on(table.category),
+}));
+
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = typeof systemSettings.$inferInsert;
+
+/**
+ * Audit Log - Track all system changes
+ */
+export const auditLog = mysqlTable("audit_log", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  userName: varchar("userName", { length: 200 }),
+  action: varchar("action", { length: 100 }).notNull(),
+  module: varchar("module", { length: 100 }).notNull(),
+  entityType: varchar("entityType", { length: 100 }),
+  entityId: varchar("entityId", { length: 64 }),
+  changes: text("changes"), // JSON with before/after values
+  ipAddress: varchar("ipAddress", { length: 50 }),
+  userAgent: varchar("userAgent", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow(),
+}, (table) => ({
+  userIdx: index("audit_user_idx").on(table.userId),
+  moduleIdx: index("audit_module_idx").on(table.module),
+  dateIdx: index("audit_date_idx").on(table.createdAt),
+}));
+
+export type AuditLog = typeof auditLog.$inferSelect;
+export type InsertAuditLog = typeof auditLog.$inferInsert;
+
+/**
+ * System Notifications - User notifications
+ */
+export const systemNotifications = mysqlTable("system_notifications", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  message: text("message").notNull(),
+  type: mysqlEnum("type", ["info", "success", "warning", "error"]).notNull(),
+  category: varchar("category", { length: 100 }),
+  actionUrl: varchar("actionUrl", { length: 1000 }),
+  isRead: boolean("isRead").default(false).notNull(),
+  readAt: timestamp("readAt"),
+  createdAt: timestamp("createdAt").defaultNow(),
+}, (table) => ({
+  userIdx: index("notif_user_idx").on(table.userId),
+  readIdx: index("notif_read_idx").on(table.isRead),
+  dateIdx: index("notif_date_idx").on(table.createdAt),
+}));
+
+export type SystemNotification = typeof systemNotifications.$inferSelect;
+export type InsertSystemNotification = typeof systemNotifications.$inferInsert;
+

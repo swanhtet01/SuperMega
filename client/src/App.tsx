@@ -1,53 +1,161 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import Dashboard from "@/pages/Dashboard";
+import ProductionEntry from "@/pages/ProductionEntry";
+import { Route, Switch, Link, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import DashboardLayout from "./components/DashboardLayout";
-import Dashboard from "./pages/Dashboard";
-import QualityInspection from "./pages/QualityInspection";
-import ProductionEntry from "./pages/ProductionEntry";
-import InventoryManagement from "./pages/InventoryManagement";
-import SalesManagement from "./pages/SalesManagement";
-import FinancialManagement from "./pages/FinancialManagement";
-import AIAssistant from "./pages/AIAssistant";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import { Factory, LayoutDashboard, LogOut, Languages } from "lucide-react";
 
-function Router() {
+function AppContent() {
+  const { user, loading, isAuthenticated, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
+  const [location] = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{t("common.loading")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center">
+              <Factory className="w-12 h-12 text-primary-foreground" />
+            </div>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">{t("app.title")}</h1>
+            <p className="text-muted-foreground mt-2">{t("app.subtitle")}</p>
+            <p className="text-sm text-muted-foreground mt-4">
+              Please sign in to continue
+            </p>
+          </div>
+          <Button
+            onClick={() => (window.location.href = getLoginUrl())}
+            className="w-full"
+            size="lg"
+          >
+            Sign in
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <DashboardLayout>
-      <Switch>
-        <Route path={"/"} component={Dashboard} />
-        <Route path={"/inspection"} component={QualityInspection} />
-        <Route path={"/production"} component={ProductionEntry} />
-        <Route path={"/inventory"} component={InventoryManagement} />
-        <Route path={"/sales"} component={SalesManagement} />
-        <Route path={"/financial"} component={FinancialManagement} />
-        <Route path={"/ai-assistant"} component={AIAssistant} />
-        <Route path={"/alerts"} component={() => <div className="text-2xl font-bold">Alerts Module - Coming Soon</div>} />
-        <Route path={"/404"} component={NotFound} />
-        <Route component={NotFound} />
-      </Switch>
-    </DashboardLayout>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <Link href="/">
+                <a className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                    <Factory className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h1 className="font-bold text-lg">{t("app.title")}</h1>
+                    <p className="text-xs text-muted-foreground">{t("app.subtitle")}</p>
+                  </div>
+                </a>
+              </Link>
+
+              <nav className="hidden md:flex items-center gap-4">
+                <Link href="/">
+                  <a
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+                      location === "/"
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    {t("nav.dashboard")}
+                  </a>
+                </Link>
+                <Link href="/production">
+                  <a
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+                      location === "/production"
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    <Factory className="w-4 h-4" />
+                    {t("nav.production")}
+                  </a>
+                </Link>
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLanguage(language === "en" ? "my" : "en")}
+                className="gap-2"
+              >
+                <Languages className="w-4 h-4" />
+                {language === "en" ? "မြန်မာ" : "English"}
+              </Button>
+              
+              <div className="text-sm text-muted-foreground hidden md:block">
+                {user?.name}
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => logout()}
+                className="gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                {t("nav.logout")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main>
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          <Route path="/production" component={ProductionEntry} />
+          <Route path="/404" component={NotFound} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+    </div>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+      <ThemeProvider defaultTheme="light">
+        <LanguageProvider>
+          <TooltipProvider>
+            <Toaster />
+            <AppContent />
+          </TooltipProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

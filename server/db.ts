@@ -1,32 +1,40 @@
-import { eq, and, gte, lte, desc, count, sql } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { 
-  InsertUser, 
+import {
   users,
+  InsertUser,
   productionRecords,
   InsertProductionRecord,
-  qualityControlRecords,
-  InsertQualityControlRecord,
-  rawMaterials,
-  InsertRawMaterial,
-  finishedGoods,
-  InsertFinishedGood,
+  flapRecords,
+  InsertFlapRecord,
   dealers,
   InsertDealer,
   salesOrders,
   InsertSalesOrder,
   salesOrderItems,
   InsertSalesOrderItem,
+  rawMaterials,
+  InsertRawMaterial,
+  finishedGoods,
+  InsertFinishedGood,
   financialTransactions,
   InsertFinancialTransaction,
-  productionTargets,
-  InsertProductionTarget,
-  systemAlerts,
-  InsertSystemAlert,
-  qualityInspections,
-  InsertQualityInspection,
-  defects,
-  InsertDefect,
+  announcements,
+  InsertAnnouncement,
+  scheduleEvents,
+  InsertScheduleEvent,
+  systemInsights,
+  InsertSystemInsight,
+  uploadedFiles,
+  InsertUploadedFile,
+  dataSyncLog,
+  InsertDataSyncLog,
+  systemSettings,
+  InsertSystemSetting,
+  auditLog,
+  InsertAuditLog,
+  systemNotifications,
+  InsertSystemNotification,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -44,6 +52,10 @@ export async function getDb() {
   }
   return _db;
 }
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.id) {
@@ -79,12 +91,25 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
     }
+    
+    // Set role - default to supervisor, admin if owner
     if (user.role === undefined) {
       if (user.id === ENV.ownerId) {
         user.role = 'admin';
         values.role = 'admin';
         updateSet.role = 'admin';
+      } else {
+        values.role = 'supervisor';
+        updateSet.role = 'supervisor';
       }
+    } else {
+      values.role = user.role;
+      updateSet.role = user.role;
+    }
+
+    if (user.department !== undefined) {
+      values.department = user.department;
+      updateSet.department = user.department;
     }
 
     if (Object.keys(updateSet).length === 0) {
@@ -108,579 +133,347 @@ export async function getUser(id: string) {
   }
 
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-
   return result.length > 0 ? result[0] : undefined;
 }
 
-// ============= LEGACY FUNCTIONS (kept for compatibility) =============
-
-export async function addProductionRecord(record: InsertProductionRecord) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.insert(productionRecords).values(record);
-  return record;
-}
-
-export async function getSystemAlerts(resolved?: boolean) {
-  const db = await getDb();
-  if (!db) return [];
-  let query = db.select().from(systemAlerts);
-  if (resolved !== undefined) {
-    query = query.where(eq(systemAlerts.resolved, resolved)) as any;
-  }
-  return await query.orderBy(desc(systemAlerts.createdAt));
-}
-
-export async function getDashboardKPIs(month: string) {
-  const db = await getDb();
-  if (!db) return null;
-  const startDate = `${month}-01`;
-  const endDate = `${month}-31`;
-  const productionStats = await db.select({
-    totalProduced: sql<number>`SUM(${productionRecords.quantityProduced})`,
-    totalApproved: sql<number>`SUM(${productionRecords.quantityApproved})`,
-    totalRejected: sql<number>`SUM(${productionRecords.quantityRejected})`,
-  }).from(productionRecords).where(and(gte(productionRecords.productionDate, startDate), lte(productionRecords.productionDate, endDate)));
-  const salesStats = await db.select({
-    totalOrders: count(salesOrders.id),
-    totalRevenue: sql<number>`SUM(${salesOrders.totalAmount})`,
-    totalPaid: sql<number>`SUM(${salesOrders.paidAmount})`,
-  }).from(salesOrders).where(and(gte(salesOrders.orderDate, startDate), lte(salesOrders.orderDate, endDate)));
-  return {
-    production: productionStats[0] || { totalProduced: 0, totalApproved: 0, totalRejected: 0 },
-    sales: salesStats[0] || { totalOrders: 0, totalRevenue: 0, totalPaid: 0 },
-  };
-}
-
-
-
 // ============================================
-// PRODUCTION FUNCTIONS
+// PRODUCTION MODULE
 // ============================================
 
-export async function getProductionRecords(limit: number = 50, offset: number = 0) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const records = await db
-    .select()
-    .from(productionRecords)
-    .limit(limit)
-    .offset(offset)
-    .orderBy(productionRecords.productionDate);
-  
-  return records;
-}
-
-export async function getProductionByDateRange(startDate: string, endDate: string) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const records = await db
-    .select()
-    .from(productionRecords)
-    .where(
-      and(
-        gte(productionRecords.productionDate, startDate),
-        lte(productionRecords.productionDate, endDate)
-      )
-    )
-    .orderBy(productionRecords.productionDate);
-  
-  return records;
-}
-
-export async function getProductionSummary() {
-  const db = await getDb();
-  if (!db) return { totalProduction: 0, totalApproved: 0, totalRejected: 0, approvalRate: 0, defectRate: 0 };
-  
-  const records = await db.select().from(productionRecords);
-  
-  const totalProduced = records.reduce((sum, r) => sum + r.quantityProduced, 0);
-  const totalApproved = records.reduce((sum, r) => sum + r.quantityApproved, 0);
-  const totalRejected = records.reduce((sum, r) => sum + r.quantityRejected, 0);
-  
-  return {
-    totalProduction: totalProduced,
-    totalApproved,
-    totalRejected,
-    approvalRate: totalProduced > 0 ? (totalApproved / totalProduced) * 100 : 0,
-    defectRate: totalProduced > 0 ? (totalRejected / totalProduced) * 100 : 0,
-  };
-}
-
-export async function createProductionRecord(data: Omit<InsertProductionRecord, 'id' | 'createdAt' | 'updatedAt'>) {
+export async function createProductionRecord(record: Omit<InsertProductionRecord, "id" | "createdAt" | "updatedAt">) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const id = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  const record: InsertProductionRecord = {
+  await db.insert(productionRecords).values({
     id,
-    productionDate: data.productionDate,
-    tireSize: data.tireSize,
-    tireType: data.tireType,
-    quantityProduced: data.quantityProduced,
-    quantityApproved: data.quantityApproved,
-    quantityRejected: data.quantityRejected,
-    shift: data.shift,
-    batchNumber: data.batchNumber,
-    notes: data.notes,
-  };
-  
-  await db.insert(productionRecords).values(record);
-  
-  return record;
+    ...record,
+  });
+
+  return id;
 }
 
-// ============================================
-// QUALITY FUNCTIONS
-// ============================================
-
-export async function getQualityInspections(filters: {
-  batchId?: string;
-  stage?: "mixing" | "building" | "curing" | "final";
-  limit?: number;
+export async function getProductionRecords(filters?: {
+  startDate?: string;
+  endDate?: string;
+  tireSize?: string;
+  batchNumber?: string;
 }) {
   const db = await getDb();
   if (!db) return [];
-  
-  // TODO: Implement proper filtering with drizzle-orm
-  const inspections = await db
-    .select()
-    .from(qualityInspections)
-    .limit(filters.limit || 50);
-  
-  return inspections;
+
+  let query = db.select().from(productionRecords);
+
+  const conditions = [];
+  if (filters?.startDate) {
+    conditions.push(gte(productionRecords.productionDate, filters.startDate));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(productionRecords.productionDate, filters.endDate));
+  }
+  if (filters?.tireSize) {
+    conditions.push(eq(productionRecords.tireSize, filters.tireSize));
+  }
+  if (filters?.batchNumber) {
+    conditions.push(eq(productionRecords.batchNumber, filters.batchNumber));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  return await query.orderBy(desc(productionRecords.productionDate));
 }
 
-export async function createQualityInspection(data: Omit<InsertQualityInspection, 'id' | 'timestamp'>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const id = `insp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
-  await db.insert(qualityInspections).values({
-    id,
-    ...data,
-  });
-  
-  return { id, ...data };
-}
-
-export async function createDefect(data: Omit<InsertDefect, 'id' | 'createdAt'>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const id = `defect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
-  await db.insert(defects).values({
-    id,
-    ...data,
-  });
-  
-  return { id, ...data };
-}
-
-export async function getDefectsByInspection(inspectionId: string) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const defectRecords = await db
-    .select()
-    .from(defects)
-    .where(eq(defects.inspectionId, inspectionId));
-  
-  return defectRecords;
-}
-
-export async function getQualityMetrics(filters: {
+export async function getProductionSummary(filters?: {
   startDate?: string;
   endDate?: string;
 }) {
   const db = await getDb();
-  if (!db) return { defectRate: 0, passRate: 0, totalInspections: 0 };
-  
-  const inspections = await db.select().from(qualityInspections);
-  
-  const totalInspections = inspections.length;
-  const passedInspections = inspections.filter(i => i.result === "pass").length;
-  const failedInspections = inspections.filter(i => i.result === "fail").length;
-  
+  if (!db) return { totalProduced: 0, totalApproved: 0, totalRejected: 0, approvalRate: 0 };
+
+  const conditions = [];
+  if (filters?.startDate) {
+    conditions.push(gte(productionRecords.productionDate, filters.startDate));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(productionRecords.productionDate, filters.endDate));
+  }
+
+  let query = db
+    .select({
+      totalProduced: sql<number>`SUM(${productionRecords.totalProduced})`,
+      totalApproved: sql<number>`SUM(${productionRecords.curingA})`,
+      totalRejected: sql<number>`SUM(${productionRecords.curingR})`,
+    })
+    .from(productionRecords);
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  const result = await query;
+  const data = result[0] || { totalProduced: 0, totalApproved: 0, totalRejected: 0 };
+
   return {
-    totalInspections,
-    passRate: totalInspections > 0 ? (passedInspections / totalInspections) * 100 : 0,
-    defectRate: totalInspections > 0 ? (failedInspections / totalInspections) * 100 : 0,
+    totalProduced: Number(data.totalProduced) || 0,
+    totalApproved: Number(data.totalApproved) || 0,
+    totalRejected: Number(data.totalRejected) || 0,
+    approvalRate: data.totalProduced > 0 
+      ? ((Number(data.totalApproved) / Number(data.totalProduced)) * 100) 
+      : 0,
   };
 }
 
 // ============================================
-// INVENTORY FUNCTIONS
+// SALES MODULE
 // ============================================
 
-export async function getRawMaterials() {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const materials = await db.select().from(rawMaterials);
-  return materials;
-}
-
-export async function getFinishedGoods() {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const goods = await db.select().from(finishedGoods);
-  return goods;
-}
-
-export async function updateRawMaterialStock(id: string, quantity: number, operation: "add" | "subtract") {
+export async function createDealer(dealer: Omit<InsertDealer, "id" | "createdAt" | "updatedAt">) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const material = await db.select().from(rawMaterials).where(eq(rawMaterials.id, id)).limit(1);
-  
-  if (material.length === 0) {
-    throw new Error("Material not found");
-  }
-  
-  const currentStock = material[0].currentStock;
-  const newStock = operation === "add" ? currentStock + quantity : currentStock - quantity;
-  
-  if (newStock < 0) {
-    throw new Error("Insufficient stock");
-  }
-  
-  await db.update(rawMaterials)
-    .set({ currentStock: newStock })
-    .where(eq(rawMaterials.id, id));
-  
-  return { id, newStock };
-}
 
-export async function updateFinishedGoodsStock(id: string, quantity: number, operation: "add" | "subtract") {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const goods = await db.select().from(finishedGoods).where(eq(finishedGoods.id, id)).limit(1);
-  
-  if (goods.length === 0) {
-    throw new Error("Finished goods not found");
-  }
-  
-  const currentStock = goods[0].currentStock;
-  const newStock = operation === "add" ? currentStock + quantity : currentStock - quantity;
-  
-  if (newStock < 0) {
-    throw new Error("Insufficient stock");
-  }
-  
-  await db.update(finishedGoods)
-    .set({ currentStock: newStock })
-    .where(eq(finishedGoods.id, id));
-  
-  return { id, newStock };
-}
-
-export async function getLowStockItems() {
-  const db = await getDb();
-  if (!db) return { rawMaterials: [], finishedGoods: [] };
-  
-  const lowRawMaterials = await db
-    .select()
-    .from(rawMaterials)
-    .where(lte(rawMaterials.currentStock, rawMaterials.minimumStock));
-  
-  const lowFinishedGoods = await db
-    .select()
-    .from(finishedGoods)
-    .where(lte(finishedGoods.currentStock, finishedGoods.minimumStock));
-  
-  return {
-    rawMaterials: lowRawMaterials,
-    finishedGoods: lowFinishedGoods,
-  };
-}
-
-// ============================================
-// SALES FUNCTIONS
-// ============================================
-
-export async function getDealers(status?: "active" | "inactive" | "suspended") {
-  const db = await getDb();
-  if (!db) return [];
-  
-  if (status) {
-    return await db.select().from(dealers).where(eq(dealers.status, status));
-  }
-  
-  return await db.select().from(dealers);
-}
-
-export async function createDealer(data: Omit<InsertDealer, 'id' | 'createdAt' | 'updatedAt' | 'outstandingBalance' | 'status'>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
   const id = `dealer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   await db.insert(dealers).values({
     id,
-    ...data,
-    outstandingBalance: 0,
-    status: "active",
+    ...dealer,
   });
-  
-  return { id, ...data };
+
+  return id;
 }
 
-export async function updateDealer(id: string, data: Partial<InsertDealer>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  await db.update(dealers)
-    .set(data)
-    .where(eq(dealers.id, id));
-  
-  return { id, ...data };
-}
-
-export async function getSalesOrders(filters: {
-  dealerId?: string;
-  status?: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
-  limit?: number;
-}) {
+export async function getDealers() {
   const db = await getDb();
   if (!db) return [];
-  
-  // TODO: Implement proper filtering
-  const orders = await db
-    .select()
-    .from(salesOrders)
-    .limit(filters.limit || 50);
-  
-  return orders;
+
+  return await db.select().from(dealers).where(eq(dealers.isActive, true));
 }
 
-export async function createSalesOrder(data: {
-  dealerId: string;
-  orderDate: Date;
-  deliveryDate?: Date;
-  notes?: string;
-  items: Array<{
-    tireSize: string;
-    quantity: number;
-    unitPrice: number;
-  }>;
+export async function getSalesSummary(filters?: {
+  startDate?: string;
+  endDate?: string;
 }) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const orderNumber = `SO-${Date.now()}`;
-  
-  const totalAmount = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-  
-  const [order] = await db.insert(salesOrders).values({
-    id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    orderNumber,
-    dealerId: data.dealerId,
-    orderDate: data.orderDate,
-    deliveryDate: data.deliveryDate,
-    totalAmount,
-    paidAmount: 0,
-    status: "pending",
-    paymentStatus: "unpaid",
-    notes: data.notes,
-  }).$returningId();
-  
-  const orderId = order.id;
-  
-  // Insert order items
-  for (const item of data.items) {
-    const itemId = `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    await db.insert(salesOrderItems).values({
-      id: itemId,
-      orderId,
-      tireSize: item.tireSize,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: item.quantity * item.unitPrice,
-    });
+  if (!db) return { totalOrders: 0, totalAmount: 0, paidAmount: 0, pendingAmount: 0 };
+
+  const conditions = [];
+  if (filters?.startDate) {
+    conditions.push(gte(salesOrders.orderDate, filters.startDate));
   }
-  
-  return { id: orderId, orderNumber };
-}
+  if (filters?.endDate) {
+    conditions.push(lte(salesOrders.orderDate, filters.endDate));
+  }
 
-export async function updateSalesOrderStatus(orderId: string, status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled") {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  await db.update(salesOrders)
-    .set({ status })
-    .where(eq(salesOrders.id, orderId));
-  
-  return { orderId, status };
-}
+  let query = db
+    .select({
+      totalOrders: sql<number>`COUNT(*)`,
+      totalAmount: sql<number>`SUM(${salesOrders.totalAmount})`,
+      paidAmount: sql<number>`SUM(${salesOrders.paidAmount})`,
+    })
+    .from(salesOrders);
 
-export async function getSalesOrderItems(orderId: string) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const items = await db
-    .select()
-    .from(salesOrderItems)
-    .where(eq(salesOrderItems.orderId, orderId));
-  
-  return items;
-}
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
 
-// ============================================
-// FINANCIAL FUNCTIONS
-// ============================================
+  const result = await query;
+  const data = result[0] || { totalOrders: 0, totalAmount: 0, paidAmount: 0 };
 
-export async function getFinancialTransactions(filters: {
-  type?: "revenue" | "expense" | "asset" | "liability";
-  startDate?: string;
-  endDate?: string;
-  limit?: number;
-}) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  // TODO: Implement proper filtering
-  const transactions = await db
-    .select()
-    .from(financialTransactions)
-    .limit(filters.limit || 100);
-  
-  return transactions;
-}
-
-export async function createFinancialTransaction(data: Omit<InsertFinancialTransaction, 'id' | 'createdAt'>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const id = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
-  await db.insert(financialTransactions).values({
-    id,
-    ...data,
-  });
-  
-  return { id, ...data };
-}
-
-export async function getFinancialSummary(filters: {
-  startDate?: string;
-  endDate?: string;
-}) {
-  const db = await getDb();
-  if (!db) return { totalRevenue: 0, totalExpenses: 0, netProfit: 0 };
-  
-  const transactions = await db.select().from(financialTransactions);
-  
-  const revenue = transactions
-    .filter(t => t.transactionType === "revenue")
-    .reduce((sum, t) => sum + t.amount, 0);
-  
-  const expense = transactions
-    .filter(t => t.transactionType === "expense")
-    .reduce((sum, t) => sum + t.amount, 0);
-  
   return {
-    totalRevenue: revenue,
-    totalExpenses: expense,
-    netProfit: revenue - expense,
+    totalOrders: Number(data.totalOrders) || 0,
+    totalAmount: Number(data.totalAmount) || 0,
+    paidAmount: Number(data.paidAmount) || 0,
+    pendingAmount: (Number(data.totalAmount) - Number(data.paidAmount)) || 0,
   };
 }
 
-export async function getProfitAndLoss(startDate: string, endDate: string) {
-  const db = await getDb();
-  if (!db) return { revenue: [], expenses: [], totalRevenue: 0, totalExpense: 0, netProfit: 0 };
-  
-  const transactions = await db.select().from(financialTransactions);
-  
-  const revenue = transactions.filter(t => t.transactionType === "revenue");
-  const expenses = transactions.filter(t => t.transactionType === "expense");
-  
-  const totalRevenue = revenue.reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = expenses.reduce((sum, t) => sum + t.amount, 0);
-  
-  return {
-    revenue,
-    expenses,
-    totalRevenue,
-    totalExpense,
-    netProfit: totalRevenue - totalExpense,
-  };
-}
-
-
-
-
-
-
-// Raw Materials Management
-export async function createRawMaterial(data: Omit<InsertRawMaterial, "id" | "createdAt" | "updatedAt">) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const id = `rm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  await db.insert(rawMaterials).values({ id, ...data });
-  return id;
-}
-
-// Finished Goods Management
-export async function createFinishedGood(data: Omit<InsertFinishedGood, "id" | "createdAt" | "updatedAt">) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const id = `fg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  await db.insert(finishedGoods).values({ id, ...data });
-  return id;
-}
-
-
-
-
 // ============================================
-// SUMMARY FUNCTIONS FOR DASHBOARD
+// INVENTORY MODULE
 // ============================================
-
-export async function getSalesSummary() {
-  const db = await getDb();
-  if (!db) return { totalOrders: 0, totalRevenue: 0, totalPaid: 0, pendingOrders: 0 };
-  
-  const orders = await db.select().from(salesOrders);
-  
-  const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
-  const pendingOrders = orders.filter(o => o.status === "pending").length;
-  
-  return {
-    totalOrders,
-    totalRevenue,
-    totalPaid,
-    pendingOrders,
-  };
-}
 
 export async function getInventorySummary() {
   const db = await getDb();
-  if (!db) return { lowStockItems: 0, totalValue: 0, finishedGoodsCount: 0 };
-  
-  const rawMats = await db.select().from(rawMaterials);
-  const finished = await db.select().from(finishedGoods);
-  
-  const lowStockItems = rawMats.filter(m => m.currentStock <= m.minimumStock).length;
-  const totalValue = rawMats.reduce((sum, m) => sum + (m.currentStock * m.unitCost), 0) +
-                     finished.reduce((sum, f) => sum + (f.currentStock * f.unitPrice), 0);
-  const finishedGoodsCount = finished.reduce((sum, f) => sum + f.currentStock, 0);
-  
+  if (!db) return { lowStockItems: 0, outOfStockItems: 0, totalValue: 0 };
+
+  const rawMaterialsResult = await db
+    .select({
+      lowStock: sql<number>`SUM(CASE WHEN ${rawMaterials.currentStock} <= ${rawMaterials.minimumStock} THEN 1 ELSE 0 END)`,
+      outOfStock: sql<number>`SUM(CASE WHEN ${rawMaterials.currentStock} = 0 THEN 1 ELSE 0 END)`,
+      totalValue: sql<number>`SUM(${rawMaterials.currentStock} * ${rawMaterials.unitCost})`,
+    })
+    .from(rawMaterials);
+
+  const finishedGoodsResult = await db
+    .select({
+      lowStock: sql<number>`SUM(CASE WHEN ${finishedGoods.currentStock} <= ${finishedGoods.minimumStock} THEN 1 ELSE 0 END)`,
+      outOfStock: sql<number>`SUM(CASE WHEN ${finishedGoods.currentStock} = 0 THEN 1 ELSE 0 END)`,
+      totalValue: sql<number>`SUM(${finishedGoods.currentStock} * ${finishedGoods.unitPrice})`,
+    })
+    .from(finishedGoods);
+
+  const rawData = rawMaterialsResult[0] || { lowStock: 0, outOfStock: 0, totalValue: 0 };
+  const fgData = finishedGoodsResult[0] || { lowStock: 0, outOfStock: 0, totalValue: 0 };
+
   return {
-    lowStockItems,
-    totalValue,
-    finishedGoodsCount,
+    lowStockItems: (Number(rawData.lowStock) || 0) + (Number(fgData.lowStock) || 0),
+    outOfStockItems: (Number(rawData.outOfStock) || 0) + (Number(fgData.outOfStock) || 0),
+    totalValue: (Number(rawData.totalValue) || 0) + (Number(fgData.totalValue) || 0),
   };
 }
+
+// ============================================
+// FINANCIAL MODULE
+// ============================================
+
+export async function getFinancialSummary(filters?: {
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return { totalRevenue: 0, totalExpenses: 0, netIncome: 0 };
+
+  const conditions = [];
+  if (filters?.startDate) {
+    conditions.push(gte(financialTransactions.transactionDate, filters.startDate));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(financialTransactions.transactionDate, filters.endDate));
+  }
+
+  let query = db
+    .select({
+      type: financialTransactions.type,
+      total: sql<number>`SUM(${financialTransactions.amount})`,
+    })
+    .from(financialTransactions)
+    .groupBy(financialTransactions.type);
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  const result = await query;
+  
+  let totalRevenue = 0;
+  let totalExpenses = 0;
+
+  result.forEach((row) => {
+    if (row.type === 'revenue' || row.type === 'payment_received') {
+      totalRevenue += Number(row.total) || 0;
+    } else if (row.type === 'expense' || row.type === 'payment_made') {
+      totalExpenses += Number(row.total) || 0;
+    }
+  });
+
+  return {
+    totalRevenue,
+    totalExpenses,
+    netIncome: totalRevenue - totalExpenses,
+  };
+}
+
+// ============================================
+// QUALITY & INSIGHTS MODULE
+// ============================================
+
+export async function getQualityMetrics(filters?: {
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return { defectRate: 0, rejectionRate: 0, topDefects: [] };
+
+  const conditions = [];
+  if (filters?.startDate) {
+    conditions.push(gte(productionRecords.productionDate, filters.startDate));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(productionRecords.productionDate, filters.endDate));
+  }
+
+  let query = db
+    .select({
+      totalProduced: sql<number>`SUM(${productionRecords.totalProduced})`,
+      totalB: sql<number>`SUM(${productionRecords.curingB})`,
+      totalR: sql<number>`SUM(${productionRecords.curingR})`,
+    })
+    .from(productionRecords);
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  const result = await query;
+  const data = result[0] || { totalProduced: 0, totalB: 0, totalR: 0 };
+
+  const totalProduced = Number(data.totalProduced) || 0;
+  const totalB = Number(data.totalB) || 0;
+  const totalR = Number(data.totalR) || 0;
+
+  return {
+    defectRate: totalProduced > 0 ? (totalB / totalProduced) * 100 : 0,
+    rejectionRate: totalProduced > 0 ? (totalR / totalProduced) * 100 : 0,
+    topDefects: [], // TODO: Implement when defect tracking is added
+  };
+}
+
+export async function getSystemInsights(filters?: {
+  insightType?: string;
+  severity?: string;
+  isResolved?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db.select().from(systemInsights);
+
+  const conditions = [];
+  if (filters?.insightType) {
+    conditions.push(eq(systemInsights.insightType, filters.insightType as any));
+  }
+  if (filters?.severity) {
+    conditions.push(eq(systemInsights.severity, filters.severity as any));
+  }
+  if (filters?.isResolved !== undefined) {
+    conditions.push(eq(systemInsights.isResolved, filters.isResolved));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  return await query.orderBy(desc(systemInsights.createdAt));
+}
+
+// ============================================
+// ANNOUNCEMENTS & COMMUNICATION
+// ============================================
+
+export async function getAnnouncements(filters?: {
+  category?: string;
+  isPinned?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db.select().from(announcements);
+
+  const conditions = [];
+  if (filters?.category) {
+    conditions.push(eq(announcements.category, filters.category as any));
+  }
+  if (filters?.isPinned !== undefined) {
+    conditions.push(eq(announcements.isPinned, filters.isPinned));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  return await query.orderBy(desc(announcements.isPinned), desc(announcements.createdAt));
+}
+
+// TODO: Add more helper functions as needed for other modules
 
