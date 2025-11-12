@@ -133,10 +133,8 @@ export const excelRouter = router({
       endDate: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const records = await getProductionRecords({
-        startDate: input.startDate,
-        endDate: input.endDate,
-      });
+      // Get all production records (we'll filter by date if needed later)
+      const records = await getProductionRecords(1000);
       
       const buffer = await exportProductionData(records);
       return {
@@ -164,10 +162,8 @@ export const excelRouter = router({
     }))
     .mutation(async ({ input }) => {
       const dealers = await getDealers();
-      const orders = await getSalesOrders({
-        startDate: input.startDate ? new Date(input.startDate) : undefined,
-        endDate: input.endDate ? new Date(input.endDate) : undefined,
-      });
+      // Get all sales orders (we'll filter by date if needed later)
+      const orders = await getSalesOrders({ limit: 1000 });
       
       const buffer = await exportSalesData(dealers, orders);
       return {

@@ -214,7 +214,7 @@ async function buildDataContext(): Promise<string> {
     const defectRate = quality.length > 0 
       ? (quality.filter(q => q.result === "fail").length / quality.length * 100).toFixed(2)
       : "0.00";
-    const lowStockMaterials = rawMaterials.filter(m => m.quantityInStock < m.reorderLevel).length;
+    const lowStockMaterials = rawMaterials.filter(m => m.currentStock < m.minimumStock).length;
     const pendingOrders = orders.filter(o => o.status === "pending").length;
     
     const totalRevenue = financial
@@ -265,8 +265,8 @@ ${basicContext}
 Production Breakdown by Tire Size:
 ${Object.entries(productionBySize).map(([size, qty]) => `- ${size}: ${qty} units`).join("\n")}
 
-Defects Breakdown by Type:
-${Object.entries(defectsByType).map(([type, count]) => `- ${type}: ${count} defects`).join("\n")}
+Defects Breakdown by Result:
+${Object.entries(defectsByResult).map(([result, count]) => `- ${result}: ${count} inspections`).join("\n")}
 `.trim();
   } catch (error) {
     return await buildDataContext();
