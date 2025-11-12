@@ -468,6 +468,7 @@ export async function createSalesOrder(data: {
   const totalAmount = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   
   const [order] = await db.insert(salesOrders).values({
+    id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     orderNumber,
     dealerId: data.dealerId,
     orderDate: data.orderDate,
@@ -477,9 +478,9 @@ export async function createSalesOrder(data: {
     status: "pending",
     paymentStatus: "unpaid",
     notes: data.notes,
-  });
+  }).$returningId();
   
-  const orderId = order.insertId.toString();
+  const orderId = order.id;
   
   // Insert order items
   for (const item of data.items) {
@@ -488,7 +489,6 @@ export async function createSalesOrder(data: {
       id: itemId,
       orderId,
       tireSize: item.tireSize,
-      tireType: item.tireType,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       totalPrice: item.quantity * item.unitPrice,
