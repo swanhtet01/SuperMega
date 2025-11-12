@@ -19,6 +19,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["supervisor", "manager", "executive", "admin"]).default("supervisor").notNull(),
+  plant: mysqlEnum("plant", ["plant-a", "plant-b", "both"]).default("both"),
   department: mysqlEnum("department", ["production", "sales", "inventory", "finance", "all"]),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
@@ -38,7 +39,8 @@ export type InsertUser = typeof users.$inferInsert;
 export const productionRecords = mysqlTable("production_records", {
   id: varchar("id", { length: 64 }).primaryKey(),
   
-  // Date & Batch
+  // Plant & Date
+  plant: mysqlEnum("plant", ["plant-a", "plant-b"]).default("plant-a").notNull(),
   productionDate: date("productionDate").notNull(),
   batchNumber: varchar("batchNumber", { length: 100 }).notNull(),
   section: varchar("section", { length: 50 }).default("Section-07"),

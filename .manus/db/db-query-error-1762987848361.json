@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO users (id, name, email, role, plant, isActive) VALUES \n('planta_supervisor', 'Plant A Supervisor', 'supervisor.planta@ytf.local', 'supervisor', 'plant-a', 1),\n('planta_manager', 'Plant A Manager', 'manager.planta@ytf.local', 'manager', 'plant-a', 1),\n('plantb_supervisor', 'Plant B Supervisor', 'supervisor.plantb@ytf.local', 'supervisor', 'plant-b', 1),\n('plantb_manager', 'Plant B Manager', 'manager.plantb@ytf.local', 'manager', 'plant-b', 1),\n('cross_plant_exec', 'Executive (Both Plants)', 'executive@ytf.local', 'executive', 'both', 1)\nON DUPLICATE KEY UPDATE name=VALUES(name), plant=VALUES(plant);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3bQFTkpbjMoBGxQ.d490348e4005 --database 45JoWfWyuUjKHFq2neKvby --execute INSERT INTO users (id, name, email, role, plant, isActive) VALUES \n('planta_supervisor', 'Plant A Supervisor', 'supervisor.planta@ytf.local', 'supervisor', 'plant-a', 1),\n('planta_manager', 'Plant A Manager', 'manager.planta@ytf.local', 'manager', 'plant-a', 1),\n('plantb_supervisor', 'Plant B Supervisor', 'supervisor.plantb@ytf.local', 'supervisor', 'plant-b', 1),\n('plantb_manager', 'Plant B Manager', 'manager.plantb@ytf.local', 'manager', 'plant-b', 1),\n('cross_plant_exec', 'Executive (Both Plants)', 'executive@ytf.local', 'executive', 'both', 1)\nON DUPLICATE KEY UPDATE name=VALUES(name), plant=VALUES(plant);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'isActive' in 'field list'"
+  ]
+}
