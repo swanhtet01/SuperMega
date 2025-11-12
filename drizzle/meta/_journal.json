@@ -1,5 +1,27 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1762965776542,
+      "tag": "0000_perfect_titanium_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762965910012,
+      "tag": "0001_rapid_microbe",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762971536686,
+      "tag": "0002_hard_rhino",
+      "breakpoints": true
+    }
+  ]
 }
