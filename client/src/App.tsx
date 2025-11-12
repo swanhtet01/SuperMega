@@ -7,6 +7,10 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import QualityInspection from "./pages/QualityInspection";
+import ProductionEntry from "./pages/ProductionEntry";
+import InventoryManagement from "./pages/InventoryManagement";
+import SalesManagement from "./pages/SalesManagement";
+import FinancialManagement from "./pages/FinancialManagement";
 
 function Router() {
   return (
@@ -14,10 +18,10 @@ function Router() {
       <Switch>
         <Route path={"/"} component={Dashboard} />
         <Route path={"/inspection"} component={QualityInspection} />
-        <Route path={"/production"} component={() => <div className="text-2xl font-bold">Production Module - Coming Soon</div>} />
-        <Route path={"/inventory"} component={() => <div className="text-2xl font-bold">Inventory Module - Coming Soon</div>} />
-        <Route path={"/sales"} component={() => <div className="text-2xl font-bold">Sales Module - Coming Soon</div>} />
-        <Route path={"/financial"} component={() => <div className="text-2xl font-bold">Financial Module - Coming Soon</div>} />
+        <Route path={"/production"} component={ProductionEntry} />
+        <Route path={"/inventory"} component={InventoryManagement} />
+        <Route path={"/sales"} component={SalesManagement} />
+        <Route path={"/financial"} component={FinancialManagement} />
         <Route path={"/alerts"} component={() => <div className="text-2xl font-bold">Alerts Module - Coming Soon</div>} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
