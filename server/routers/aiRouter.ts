@@ -253,11 +253,9 @@ async function buildDetailedDataContext(): Promise<string> {
       return acc;
     }, {} as Record<string, number>);
 
-    // Defects by type
-    const defectsByType = quality.reduce((acc, q) => {
-      if (q.result === "fail") {
-        acc[q.defectType || "unknown"] = (acc[q.defectType || "unknown"] || 0) + 1;
-      }
+    // Defects by result
+    const defectsByResult = quality.reduce((acc, q) => {
+      acc[q.result] = (acc[q.result] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 

@@ -134,8 +134,8 @@ export const excelRouter = router({
     }))
     .mutation(async ({ input }) => {
       const records = await getProductionRecords({
-        startDate: input.startDate ? new Date(input.startDate) : undefined,
-        endDate: input.endDate ? new Date(input.endDate) : undefined,
+        startDate: input.startDate,
+        endDate: input.endDate,
       });
       
       const buffer = await exportProductionData(records);
@@ -183,8 +183,8 @@ export const excelRouter = router({
     }))
     .mutation(async ({ input }) => {
       const transactions = await getFinancialTransactions({
-        startDate: input.startDate ? new Date(input.startDate) : undefined,
-        endDate: input.endDate ? new Date(input.endDate) : undefined,
+        startDate: input.startDate,
+        endDate: input.endDate,
       });
       
       const buffer = await exportFinancialData(transactions);

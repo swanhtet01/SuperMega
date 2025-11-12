@@ -223,13 +223,13 @@ export async function importInventoryData(buffer: Buffer): Promise<ImportResult>
       try {
         await createRawMaterial({
           materialName: row["Material Name"],
-          materialType: row["Material Type"],
-          quantityInStock: Number(row["Quantity In Stock"]),
+          materialCategory: row["Material Type"] || "General",
           unit: row["Unit"],
+          currentStock: Number(row["Quantity In Stock"]),
+          minimumStock: Number(row["Reorder Level"]),
           unitCost: Number(row["Unit Cost (MMK)"]),
-          reorderLevel: Number(row["Reorder Level"]),
           supplier: row["Supplier"] || undefined,
-          location: row["Location"] || undefined,
+          lastRestockDate: row["Last Restock Date"] || undefined,
         });
         result.imported++;
       } catch (error) {
@@ -253,9 +253,9 @@ export async function importInventoryData(buffer: Buffer): Promise<ImportResult>
         await createFinishedGood({
           tireSize: row["Tire Size"],
           tireType: row["Tire Type"],
-          quantityInStock: Number(row["Quantity In Stock"]),
+          currentStock: Number(row["Quantity In Stock"]),
+          minimumStock: Number(row["Minimum Stock"]) || 10,
           unitPrice: Number(row["Unit Price (MMK)"]),
-          location: row["Location"] || undefined,
         });
         result.imported++;
       } catch (error) {
