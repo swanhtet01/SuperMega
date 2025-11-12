@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 
 // Import feature routers
+import { dashboardRouter } from "./routers/dashboardRouter";
 import { productionRouter } from "./routers/productionRouter";
 import { qualityRouter } from "./routers/qualityRouter";
 import { inventoryRouter } from "./routers/inventoryRouter";
@@ -27,6 +28,7 @@ export const appRouter = router({
   }),
 
   // Feature routers
+  dashboard: dashboardRouter,
   production: productionRouter,
   quality: qualityRouter,
   inventory: inventoryRouter,

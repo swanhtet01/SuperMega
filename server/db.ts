@@ -192,7 +192,7 @@ export async function getProductionByDateRange(startDate: string, endDate: strin
 
 export async function getProductionSummary() {
   const db = await getDb();
-  if (!db) return { totalProduction: 0, approvalRate: 0, defectRate: 0 };
+  if (!db) return { totalProduction: 0, totalApproved: 0, totalRejected: 0, approvalRate: 0, defectRate: 0 };
   
   const records = await db.select().from(productionRecords);
   
@@ -202,6 +202,8 @@ export async function getProductionSummary() {
   
   return {
     totalProduction: totalProduced,
+    totalApproved,
+    totalRejected,
     approvalRate: totalProduced > 0 ? (totalApproved / totalProduced) * 100 : 0,
     defectRate: totalProduced > 0 ? (totalRejected / totalProduced) * 100 : 0,
   };
@@ -213,12 +215,22 @@ export async function createProductionRecord(data: Omit<InsertProductionRecord, 
   
   const id = `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  await db.insert(productionRecords).values({
+  const record: InsertProductionRecord = {
     id,
-    ...data,
-  });
+    productionDate: data.productionDate,
+    tireSize: data.tireSize,
+    tireType: data.tireType,
+    quantityProduced: data.quantityProduced,
+    quantityApproved: data.quantityApproved,
+    quantityRejected: data.quantityRejected,
+    shift: data.shift,
+    batchNumber: data.batchNumber,
+    notes: data.notes,
+  };
   
-  return { id, ...data };
+  await db.insert(productionRecords).values(record);
+  
+  return record;
 }
 
 // ============================================
@@ -562,7 +574,7 @@ export async function getFinancialSummary(filters: {
   endDate?: string;
 }) {
   const db = await getDb();
-  if (!db) return { totalRevenue: 0, totalExpense: 0, netProfit: 0 };
+  if (!db) return { totalRevenue: 0, totalExpenses: 0, netProfit: 0 };
   
   const transactions = await db.select().from(financialTransactions);
   
@@ -576,7 +588,7 @@ export async function getFinancialSummary(filters: {
   
   return {
     totalRevenue: revenue,
-    totalExpense: expense,
+    totalExpenses: expense,
     netProfit: revenue - expense,
   };
 }
@@ -627,4 +639,48 @@ export async function createFinishedGood(data: Omit<InsertFinishedGood, "id" | "
   return id;
 }
 
+
+
+
+// ============================================
+// SUMMARY FUNCTIONS FOR DASHBOARD
+// ============================================
+
+export async function getSalesSummary() {
+  const db = await getDb();
+  if (!db) return { totalOrders: 0, totalRevenue: 0, totalPaid: 0, pendingOrders: 0 };
+  
+  const orders = await db.select().from(salesOrders);
+  
+  const totalOrders = orders.length;
+  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+  const pendingOrders = orders.filter(o => o.status === "pending").length;
+  
+  return {
+    totalOrders,
+    totalRevenue,
+    totalPaid,
+    pendingOrders,
+  };
+}
+
+export async function getInventorySummary() {
+  const db = await getDb();
+  if (!db) return { lowStockItems: 0, totalValue: 0, finishedGoodsCount: 0 };
+  
+  const rawMats = await db.select().from(rawMaterials);
+  const finished = await db.select().from(finishedGoods);
+  
+  const lowStockItems = rawMats.filter(m => m.currentStock <= m.minimumStock).length;
+  const totalValue = rawMats.reduce((sum, m) => sum + (m.currentStock * m.unitCost), 0) +
+                     finished.reduce((sum, f) => sum + (f.currentStock * f.unitPrice), 0);
+  const finishedGoodsCount = finished.reduce((sum, f) => sum + f.currentStock, 0);
+  
+  return {
+    lowStockItems,
+    totalValue,
+    finishedGoodsCount,
+  };
+}
 

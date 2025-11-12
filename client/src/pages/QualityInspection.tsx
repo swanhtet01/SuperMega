@@ -38,7 +38,7 @@ export default function QualityInspection() {
     severity: "minor",
     description: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   // Defect categories by type
   const defectCategories = {
@@ -81,6 +81,20 @@ export default function QualityInspection() {
     toast.info("Barcode scanning coming soon");
   };
 
+  const createInspectionMutation = trpc.quality.createInspection.useMutation({
+    onSuccess: () => {
+      toast.success("Inspection submitted successfully");
+      // Reset form
+      setBatchNumber("");
+      setResult("pass");
+      setNotes("");
+      setDefects([]);
+    },
+    onError: (error) => {
+      toast.error(`Failed to submit: ${error.message}`);
+    },
+  });
+
   const handleSubmit = async () => {
     if (!batchNumber) {
       toast.error("Please enter or scan batch number");
@@ -92,29 +106,12 @@ export default function QualityInspection() {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      // TODO: Implement inspection submission via tRPC
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
-      
-      toast.success("Inspection submitted successfully");
-      
-      // Reset form
-      setBatchNumber("");
-      setResult("pass");
-      setNotes("");
-      setDefects([]);
-      setCurrentDefect({
-        type: "visual",
-        category: "",
-        severity: "minor",
-        description: "",
-      });
-    } catch (error) {
-      toast.error("Failed to submit inspection");
-    } finally {
-      setIsSubmitting(false);
-    }
+    createInspectionMutation.mutate({
+      batchId: batchNumber,
+      stage,
+      result,
+      notes: notes || undefined,
+    });
   };
 
   const getStageColor = (s: InspectionStage) => {
@@ -401,11 +398,11 @@ export default function QualityInspection() {
         <div className="flex gap-3">
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={createInspectionMutation.isPending}
             size="lg"
             className="flex-1 h-14 text-lg"
           >
-            {isSubmitting ? (
+            {createInspectionMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Submitting...

@@ -35,7 +35,7 @@ export default function ProductionEntry() {
   const [shift, setShift] = useState("");
   const [batchNumber, setBatchNumber] = useState("");
   const [notes, setNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   // Auto-generate batch number
   const generateBatchNumber = () => {
@@ -47,6 +47,25 @@ export default function ProductionEntry() {
     setBatchNumber(batch);
     toast.success("Batch number generated");
   };
+
+  const createProductionMutation = trpc.production.create.useMutation({
+    onSuccess: () => {
+      toast.success("Production record saved successfully");
+      // Reset form
+      setTireSize("");
+      setTireType("");
+      setQuantityProduced("");
+      setQuantityApproved("");
+      setQuantityRejected("");
+      setProductionLine("");
+      setShift("");
+      setBatchNumber("");
+      setNotes("");
+    },
+    onError: (error) => {
+      toast.error(`Failed to save: ${error.message}`);
+    },
+  });
 
   const handleSubmit = async () => {
     // Validation
@@ -69,28 +88,17 @@ export default function ProductionEntry() {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      // TODO: Implement production entry via tRPC
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
-      
-      toast.success("Production record saved successfully");
-      
-      // Reset form
-      setTireSize("");
-      setTireType("");
-      setQuantityProduced("");
-      setQuantityApproved("");
-      setQuantityRejected("");
-      setProductionLine("");
-      setShift("");
-      setBatchNumber("");
-      setNotes("");
-    } catch (error) {
-      toast.error("Failed to save production record");
-    } finally {
-      setIsSubmitting(false);
-    }
+    createProductionMutation.mutate({
+      productionDate: date,
+      tireSize,
+      tireType,
+      quantityProduced: produced,
+      quantityApproved: approved,
+      quantityRejected: rejected,
+      shift: shift || undefined,
+      batchNumber,
+      notes: notes || undefined,
+    });
   };
 
   const approvalRate = quantityProduced && quantityApproved 
@@ -328,20 +336,15 @@ export default function ProductionEntry() {
 
           {/* Submit Button */}
           <div className="flex gap-3 pt-4">
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              size="lg"
-              className="flex-1 h-12 text-lg"
-            >
-              {isSubmitting ? (
+            <Button onClick={handleSubmit} size="lg" disabled={createProductionMutation.isPending}>
+              {createProductionMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
                   Save Production Record
                 </>
               )}
