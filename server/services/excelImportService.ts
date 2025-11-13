@@ -73,6 +73,8 @@ export async function importProductionExcel(fileBuffer: Buffer) {
           curingR: record.curingR || 0,
           totalProduced: total,
           specWeight: "0.00",
+          plant: "plant-a",
+          sourceFile: filename,
         });
 
         imported++;

@@ -17,9 +17,26 @@ import DemoHandler from "./pages/DemoHandler";
 import { Factory, LayoutDashboard, LogOut, Languages } from "lucide-react";
 
 function AppContent() {
-  const { user, loading, isAuthenticated, logout } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
   const [location] = useLocation();
+  const { language, setLanguage, t } = useLanguage();
+  
+  // Check for demo mode and public routes
+  const isDemoMode = typeof window !== 'undefined' && window.location.search.includes('demo=true');
+  const isPublicRoute = location === "/" || isDemoMode || location === "/demo";
+
+  // MUST call useAuth unconditionally (React hooks rule)
+  // But disable the query for public routes to avoid OAuth redirect
+  const { user, loading, isAuthenticated, logout } = useAuth({ enabled: !isPublicRoute });
+
+  // Public showcase route - ALWAYS show at root
+  if (location === "/") {
+    return <SuperMegaHome />;
+  }
+
+  // Demo mode - auto-login
+  if (isDemoMode || location === "/demo") {
+    return <DemoHandler />;
+  }
 
   if (loading) {
     return (
@@ -32,21 +49,7 @@ function AppContent() {
     );
   }
 
-  // Public routes
-  if (location === "/" || location === "/showcase") {
-    return <SuperMegaHome />;
-  }
-
-  // Demo mode - auto-login
-  if (location.includes("demo=true") || location === "/demo") {
-    return <DemoHandler />;
-  }
-
-  // FlowCore (YTF) route - requires login
-  if (location === "/flowcore" || location.startsWith("/flowcore/")) {
-    // Continue to login check below
-  }
-
+  // All other routes require authentication
   if (!isAuthenticated) {
     return <SimpleLogin />;
   }
@@ -71,10 +74,10 @@ function AppContent() {
               </Link>
 
               <nav className="hidden md:flex items-center gap-4">
-                <Link href="/">
+                <Link href="/dashboard">
                   <a
                     className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-                      location === "/"
+                      location === "/dashboard"
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-accent"
                     }`}
@@ -130,7 +133,7 @@ function AppContent() {
       {/* Main Content */}
       <main>
         <Switch>
-          <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/production" component={ProductionEntry} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />

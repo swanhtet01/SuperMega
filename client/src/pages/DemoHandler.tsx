@@ -14,13 +14,16 @@ export default function DemoHandler() {
     // Auto-login as demo user
     demoLogin.mutate(undefined, {
       onSuccess: () => {
-        // Redirect to dashboard after successful demo login
-        setLocation("/");
+        console.log("Demo login successful, redirecting to dashboard...");
+        // Wait a bit for cookie to be set before redirecting
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 500);
       },
       onError: (error) => {
         console.error("Demo login failed:", error);
         // Fallback to regular login
-        setLocation("/flowcore");
+        setLocation("/login");
       },
     });
   }, []);

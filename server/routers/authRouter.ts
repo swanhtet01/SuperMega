@@ -17,15 +17,16 @@ export const authRouter = router({
         role: 'admin' as const
       };
 
-      // Create session token
+      // Create session token with correct field names for verifySession
       const token = jwt.sign(
         {
-          sub: demoUser.id,
+          openId: demoUser.id,
+          appId: ENV.appId,
           name: demoUser.name,
           email: demoUser.email,
         },
         ENV.jwtSecret,
-        { expiresIn: '1h' } // Demo session expires in 1 hour
+        { expiresIn: '1h' }
       );
 
       // Set cookie
