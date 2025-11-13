@@ -68,7 +68,6 @@ export async function importProductionExcel(fileBuffer: Buffer) {
           shiftType: '3-shift',
           tireSize: record.tireSize,
           batchCode: '',
-          specWeight: 'N/A',
           curingA: record.curingA || 0,
           curingB: record.curingB || 0,
           curingR: record.curingR || 0,

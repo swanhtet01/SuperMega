@@ -62,7 +62,7 @@ export const productionRecords = mysqlTable("production_records", {
   totalProduced: int("totalProduced").notNull(),
   
   // Weight Tracking
-  specWeight: decimal("specWeight", { precision: 6, scale: 2 }).notNull(),
+  specWeight: decimal("specWeight", { precision: 6, scale: 2 }).default("0.00"),
   weight1: decimal("weight1", { precision: 6, scale: 2 }),
   weight2: decimal("weight2", { precision: 6, scale: 2 }),
   weight3: decimal("weight3", { precision: 6, scale: 2 }),
