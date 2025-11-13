@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { createProductionRecord } from '../db';
 
-export async function importProductionExcel(fileBuffer: Buffer) {
+export async function importProductionExcel(fileBuffer: Buffer, filename: string = 'import.xlsx') {
   const errors: string[] = [];
   let imported = 0;
 
@@ -47,6 +47,8 @@ export async function importProductionExcel(fileBuffer: Buffer) {
             record.date = parseExcelDate(value);
           } else if (header.includes('batch') || header.includes('bach')) {
             record.batchNumber = String(value);
+          } else if (header.includes('code')) {
+            record.batchCode = String(value);
           } else if (header.includes('size')) {
             record.tireSize = String(value);
           } else if (header.includes('curing a') || header.includes('a)')) {
@@ -63,17 +65,17 @@ export async function importProductionExcel(fileBuffer: Buffer) {
         const total = (record.curingA || 0) + (record.curingB || 0) + (record.curingR || 0);
 
         await createProductionRecord({
+          plant: 'plant-a',
           productionDate: record.date,
           batchNumber: record.batchNumber || 'N/A',
           shiftType: '3-shift',
           tireSize: record.tireSize,
-          batchCode: '',
+          batchCode: record.batchCode || '',
           curingA: record.curingA || 0,
           curingB: record.curingB || 0,
           curingR: record.curingR || 0,
           totalProduced: total,
-          specWeight: "0.00",
-          plant: "plant-a",
+          specWeight: '0.00',
           sourceFile: filename,
         });
 
@@ -105,3 +107,4 @@ function parseNumber(value: any): number {
   }
   return 0;
 }
+

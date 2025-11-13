@@ -5,20 +5,29 @@ import { trpc } from "@/lib/trpc";
 /**
  * Demo Handler - Auto-login for demo mode
  * Triggered when ?demo=true is in URL
+ * Uses localStorage to persist demo session across page reloads
  */
 export default function DemoHandler() {
   const [, setLocation] = useLocation();
   const demoLogin = trpc.auth.demoLogin.useMutation();
+  const utils = trpc.useUtils();
 
   useEffect(() => {
     // Auto-login as demo user
     demoLogin.mutate(undefined, {
-      onSuccess: () => {
-        console.log("Demo login successful, redirecting to dashboard...");
-        // Wait a bit for cookie to be set before redirecting
+      onSuccess: (data) => {
+        console.log("Demo login successful:", data);
+        // Store demo flag and user in localStorage
+        localStorage.setItem("demo_mode", "true");
+        localStorage.setItem("demo_user", JSON.stringify(data.user));
+        
+        // Invalidate auth cache to force refetch with new session
+        utils.auth.me.invalidate();
+        
+        // Redirect to dashboard after cache invalidation
         setTimeout(() => {
           setLocation("/dashboard");
-        }, 500);
+        }, 300);
       },
       onError: (error) => {
         console.error("Demo login failed:", error);
@@ -26,7 +35,7 @@ export default function DemoHandler() {
         setLocation("/login");
       },
     });
-  }, []);
+  }, [utils, setLocation, demoLogin]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950">
