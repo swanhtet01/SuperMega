@@ -404,3 +404,139 @@
 - [ ] Plan demo video content
 
 
+
+
+
+---
+
+## 🎨 PRODUCT REBRAND (CEO Strategic)
+- [ ] Rename project: yangon_tyre_bms → flowcore
+- [ ] Update branding: FlowCore - Smart Manufacturing Platform
+- [ ] Add Yangon Tyre logo (first client showcase)
+- [ ] Create SuperMega.dev homepage
+- [ ] Build product showcase page
+
+## 🚀 QUALITYLENS BUILD (R&D Team)
+- [ ] Design QualityLens architecture
+- [ ] Implement computer vision defect detection
+- [ ] Build quality dashboards
+- [ ] Integrate Claude Vision API
+- [ ] Create demo prototype
+
+## 🤖 AGENT DEPLOYMENT (CTO Team)
+- [ ] Get new AWS access key
+- [ ] Deploy agent orchestrator to AWS
+- [ ] Set up 24/7 autonomous operations
+- [ ] Configure monitoring and reporting
+
+
+
+
+
+---
+
+## 🚨 CRITICAL FIXES (Backend Dev Agent)
+- [ ] Fix TypeScript errors in excelImportService.ts
+- [ ] Test login functionality
+- [ ] Verify all database queries work
+- [ ] Ensure no build errors
+
+## 🌐 WEBSITE FIXES (Frontend Team)
+- [ ] Configure supermega.dev domain properly
+- [ ] Test showcase page loads
+- [ ] Verify all product cards display
+- [ ] Add YTF logo to FlowCore demo
+
+## 🏗️ INFRASTRUCTURE (DevOps Team)
+- [ ] Configure AWS with active key
+- [ ] Deploy agent orchestrator to EC2
+- [ ] Set up 24/7 monitoring
+- [ ] Test autonomous operations
+
+
+
+
+
+## 🎯 PRIORITY 1: FIX YTF LOGIN (Backend Dev Agent)
+- [ ] Check login query in authRouter
+- [ ] Verify test users exist in database
+- [ ] Test admin/test123 login
+- [ ] Fix any remaining database field issues
+- [ ] Create /flowcore route for YTF system access
+
+
+
+
+
+## 🎯 NEW REQUIREMENTS
+
+### Product Team - Role-Based Workspaces
+- [ ] Build Supervisor Dashboard (production entry, quality checks)
+- [ ] Build Manager Dashboard (analytics, reports, team performance)
+- [ ] Build Executive Dashboard (KPIs, financial overview)
+- [ ] Build Admin Dashboard (full system access, settings)
+- [ ] Create module system for each role
+
+### Marketing Team - Demo Video
+- [ ] Find public manufacturing sample data
+- [ ] Record FlowCore demo with sample data
+- [ ] Generate AI voiceover script
+- [ ] Create 60-second showcase video
+- [ ] Add to SuperMega homepage
+
+### DevOps Team - Multi-Tenant Setup
+- [ ] Design subdomain architecture (client.supermega.dev)
+- [ ] Set up database isolation per client
+- [ ] Create client provisioning system
+- [ ] Build custom branding system
+
+### UX Team - Demo Flow
+- [ ] Wire "View Demo" button to auto-login demo
+- [ ] Create sample data for demo
+- [ ] Build smooth demo experience
+- [ ] Add "Get Started" flow for real clients
+
+
+
+
+
+## 🚀 PRIORITY 1: GITHUB & AWS DEPLOYMENT
+
+### DevOps Team - GitHub Setup
+- [ ] Configure Git in project
+- [ ] Create .gitignore for sensitive files
+- [ ] Push code to swanhtet01/SuperMega repo
+- [ ] Set up GitHub Actions for CI/CD
+- [ ] Configure branch protection
+
+### DevOps Team - AWS Deployment
+- [ ] Configure EC2 instance (34.235.156.153)
+- [ ] Install Node.js, pnpm, dependencies
+- [ ] Set up PM2 for process management
+- [ ] Configure nginx reverse proxy
+- [ ] Set up SSL certificates (Let's Encrypt)
+- [ ] Configure Route53 for subdomains:
+  - supermega.dev → Main showcase
+  - ytf.supermega.dev → YTF production
+  - demo.supermega.dev → Demo mode
+  - control.supermega.dev → Control center
+- [ ] Migrate database to AWS RDS or EC2 MySQL
+- [ ] Set up automated backups
+- [ ] Configure CloudWatch monitoring
+- [ ] Test deployment and verify off Manus
+
+### Product Team - Control Center
+- [ ] Design control center interface
+- [ ] Build chat interface for CEO ↔ Agents
+- [ ] Create agent dashboard (status, tasks)
+- [ ] Add task queue management
+- [ ] Build metrics dashboard
+- [ ] Add client provisioning UI
+
+### Backend Team - Fix TypeScript Errors
+- [ ] Fix specWeight issue in excelImportService
+- [ ] Verify all types are correct
+- [ ] Run full TypeScript check
+- [ ] Ensure clean build
+
+

@@ -7,6 +7,40 @@ import jwt from "jsonwebtoken";
 import { ENV } from "../_core/env";
 
 export const authRouter = router({
+  demoLogin: publicProcedure
+    .mutation(async ({ ctx }) => {
+      // Auto-login as demo admin
+      const demoUser = {
+        id: 'demo-admin',
+        name: 'Demo Admin',
+        email: 'demo@supermega.dev',
+        role: 'admin' as const
+      };
+
+      // Create session token
+      const token = jwt.sign(
+        {
+          sub: demoUser.id,
+          name: demoUser.name,
+          email: demoUser.email,
+        },
+        ENV.jwtSecret,
+        { expiresIn: '1h' } // Demo session expires in 1 hour
+      );
+
+      // Set cookie
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, {
+        ...cookieOptions,
+        maxAge: 60 * 60 * 1000, // 1 hour
+      });
+
+      return {
+        success: true,
+        user: demoUser,
+      };
+    }),
+
   simpleLogin: publicProcedure
     .input(
       z.object({

@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, name, role FROM users",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3bQFTkpbjMoBGxQ.d490348e4005 --database 45JoWfWyuUjKHFq2neKvby --execute SELECT id, name, role FROM users",
+  "rows": [
+    {
+      "id": "5kN6yQ4GQUeBEc6QjdU7Bk",
+      "name": "Swan Htet",
+      "role": "admin"
+    },
+    {
+      "id": "test-admin",
+      "name": "Admin (Test)",
+      "role": "admin"
+    },
+    {
+      "id": "test-executive",
+      "name": "Executive (Test)",
+      "role": "executive"
+    },
+    {
+      "id": "test-manager",
+      "name": "Manager (Test)",
+      "role": "manager"
+    },
+    {
+      "id": "test-supervisor",
+      "name": "Supervisor (Test)",
+      "role": "supervisor"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\trole\n5kN6yQ4GQUeBEc6QjdU7Bk\tSwan Htet\tadmin\ntest-admin\tAdmin (Test)\tadmin\ntest-executive\tExecutive (Test)\texecutive\ntest-manager\tManager (Test)\tmanager\ntest-supervisor\tSupervisor (Test)\tsupervisor\n",
+  "stderr": "",
+  "execution_time_ms": 1628
+}

@@ -12,6 +12,8 @@ import { Route, Switch, Link, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import SuperMegaHome from "./pages/SuperMegaHome";
+import DemoHandler from "./pages/DemoHandler";
 import { Factory, LayoutDashboard, LogOut, Languages } from "lucide-react";
 
 function AppContent() {
@@ -28,6 +30,21 @@ function AppContent() {
         </div>
       </div>
     );
+  }
+
+  // Public routes
+  if (location === "/" || location === "/showcase") {
+    return <SuperMegaHome />;
+  }
+
+  // Demo mode - auto-login
+  if (location.includes("demo=true") || location === "/demo") {
+    return <DemoHandler />;
+  }
+
+  // FlowCore (YTF) route - requires login
+  if (location === "/flowcore" || location.startsWith("/flowcore/")) {
+    // Continue to login check below
   }
 
   if (!isAuthenticated) {

@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, name, role, plant, department, isActive FROM users LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3bQFTkpbjMoBGxQ.d490348e4005 --database 45JoWfWyuUjKHFq2neKvby --execute SELECT id, name, role, plant, department, isActive FROM users LIMIT 5",
+  "rows": [
+    {
+      "id": "5kN6yQ4GQUeBEc6QjdU7Bk",
+      "name": "Swan Htet",
+      "role": "admin",
+      "plant": "both",
+      "department": "NULL",
+      "isActive": "1"
+    },
+    {
+      "id": "test-admin",
+      "name": "Admin (Test)",
+      "role": "admin",
+      "plant": "both",
+      "department": "NULL",
+      "isActive": "1"
+    },
+    {
+      "id": "test-executive",
+      "name": "Executive (Test)",
+      "role": "executive",
+      "plant": "both",
+      "department": "NULL",
+      "isActive": "1"
+    },
+    {
+      "id": "test-manager",
+      "name": "Manager (Test)",
+      "role": "manager",
+      "plant": "both",
+      "department": "NULL",
+      "isActive": "1"
+    },
+    {
+      "id": "test-supervisor",
+      "name": "Supervisor (Test)",
+      "role": "supervisor",
+      "plant": "both",
+      "department": "NULL",
+      "isActive": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\trole\tplant\tdepartment\tisActive\n5kN6yQ4GQUeBEc6QjdU7Bk\tSwan Htet\tadmin\tboth\tNULL\t1\ntest-admin\tAdmin (Test)\tadmin\tboth\tNULL\t1\ntest-executive\tExecutive (Test)\texecutive\tboth\tNULL\t1\ntest-manager\tManager (Test)\tmanager\tboth\tNULL\t1\ntest-supervisor\tSupervisor (Test)\tsupervisor\tboth\tNULL\t1\n",
+  "stderr": "",
+  "execution_time_ms": 2116
+}
