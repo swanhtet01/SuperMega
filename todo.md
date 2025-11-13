@@ -657,3 +657,33 @@
 - [ ] Verify system is live
 - [ ] Fix demo login bug post-deployment
 
+
+
+
+---
+
+## 🚨 CRITICAL PRODUCTION FIXES (Nov 13, 2025 - URGENT)
+- [ ] Fix TypeError: Invalid URL errors on production (asset loading)
+- [ ] Fix DNS resolution for ytf.supermega.dev (currently DNS_PROBE_FINISHED_NXDOMAIN)
+- [ ] Remove SuperMega showcase from FlowCore app (separate to swanhtet01.github.io)
+- [ ] Make FlowCore dashboard enterprise-professional (remove marketing content)
+- [ ] Remove redundant/extra pages
+- [ ] Rebuild with correct asset paths
+
+## 📊 DATA COLLECTION PROCESS REDESIGN (Strategic)
+- [ ] Analyze Google Drive document structure (daily production data)
+- [ ] Design Google Drive sync architecture for data entry team
+- [ ] Create standardized Excel templates for each data type
+- [ ] Define folder structure: Daily Production / Quality / Inventory / Sales
+- [ ] Map data flow: Factory Floor → Google Drive → Auto-Sync → Database → Dashboard
+- [ ] Create data validation rules to prevent errors
+- [ ] Design offline-first data entry workflow
+
+## 🎯 QUALITY IMPROVEMENT STRATEGY (Business Impact)
+- [ ] Analyze current defect rate data and trends
+- [ ] Identify root causes of quality issues
+- [ ] Design process improvements to reduce defect rates
+- [ ] Create real-time quality monitoring system
+- [ ] Implement early warning alerts for quality issues
+- [ ] Document expected ROI and quality metrics improvement
+

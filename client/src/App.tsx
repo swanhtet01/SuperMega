@@ -12,7 +12,6 @@ import { Route, Switch, Link, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
-import SuperMegaHome from "./pages/SuperMegaHome";
 import DemoHandler from "./pages/DemoHandler";
 import { Factory, LayoutDashboard, LogOut, Languages } from "lucide-react";
 
@@ -20,18 +19,13 @@ function AppContent() {
   const [location] = useLocation();
   const { language, setLanguage, t } = useLanguage();
   
-  // Check for demo mode and public routes
+  // Check for demo mode
   const isDemoMode = typeof window !== 'undefined' && window.location.search.includes('demo=true');
-  const isPublicRoute = location === "/" || isDemoMode || location === "/demo";
+  const isPublicRoute = isDemoMode || location === "/demo";
 
   // MUST call useAuth unconditionally (React hooks rule)
   // But disable the query for public routes to avoid OAuth redirect
   const { user, loading, isAuthenticated, logout } = useAuth({ enabled: !isPublicRoute });
-
-  // Public showcase route - ALWAYS show at root
-  if (location === "/") {
-    return <SuperMegaHome />;
-  }
 
   // Demo mode - auto-login
   if (isDemoMode || location === "/demo") {
@@ -61,7 +55,7 @@ function AppContent() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <Link href="/">
+              <Link href="/dashboard">
                 <a className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                     <Factory className="w-6 h-6 text-primary-foreground" />
@@ -133,6 +127,7 @@ function AppContent() {
       {/* Main Content */}
       <main>
         <Switch>
+          <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/production" component={ProductionEntry} />
           <Route path="/404" component={NotFound} />
